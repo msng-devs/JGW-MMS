@@ -55,4 +55,6 @@ public class Member {
     @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "MEMBER_MODIFIED_DTTM"))
     private DefDateTime defDateTime;
 
+
+
 }

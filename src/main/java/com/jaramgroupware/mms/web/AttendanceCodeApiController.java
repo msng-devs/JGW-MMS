@@ -105,7 +105,7 @@ public class AttendanceCodeApiController {
             @RequestBody @Valid AttendanceCodeRegisterRequestControllerDto attendanceCodeRegisterRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try register Attendance Code. info = ({})",uid,attendanceCodeRegisterRequestControllerDto.toString());
+        logger.info("UID = ({}) Try add Attendance Code. info = ({})",uid,attendanceCodeRegisterRequestControllerDto.toString());
 
         //코드 검증하기
         if(!attendanceCodeService.findKey
@@ -114,7 +114,7 @@ public class AttendanceCodeApiController {
 
         //검증이 완료되었다면, 해당 코드 등록
         //TODO 하드코딩 고치기
-        Long id = attendanceService.register(
+        Long id = attendanceService.add(
                 attendanceCodeRegisterRequestControllerDto.toAttendanceServiceDto(
                         attendanceTypeService.findById(1).toEntity()
                 )

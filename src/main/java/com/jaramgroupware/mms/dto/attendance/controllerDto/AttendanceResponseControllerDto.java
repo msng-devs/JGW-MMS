@@ -16,10 +16,11 @@ import java.time.LocalDateTime;
 @Data
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class AttendanceResponseControllerDto {
+
     private Long id;
-    private String attendanceType;
-    private String memberName;
-    private LocalDateTime createdDateTime;
+    private AttendanceType attendanceType;
+    private Member member;
+    private DefDateTime defDateTime;
     private TimeTable timeTable;
     private String index;
 }

@@ -29,6 +29,7 @@ public class EventAddRequestControllerDto {
     @Size(max = 50,min=1,message = "Event 이름은 1자 이상 50자 이하이여야 합니다.")
     private String name;
 
+    @Size(max = 255,message = "입력가능한 최대 글자수는 255자입니다.")
     private String index;
 
 
