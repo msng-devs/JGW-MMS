@@ -8,6 +8,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -55,6 +56,17 @@ public class Member {
     @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "MEMBER_MODIFIED_DTTM"))
     private DefDateTime defDateTime;
 
-
+    public void update(Member member){
+        name = member.getName();
+        phoneNumber = member.getPhoneNumber();
+        major = member.getMajor();
+        rank = member.getRank();
+        role = member.getRole();
+        year = member.year;
+        defDateTime = DefDateTime.builder()
+                .createdDateTime(defDateTime.getCreatedDateTime())
+                .modifiedDataTime(LocalDateTime.now())
+                .build();
+    }
 
 }
