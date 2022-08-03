@@ -1,9 +1,12 @@
 package com.jaramgroupware.mms.web;
 
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeAddRequestControllerDto;
+import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeRegisterRequestControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.serviceDto.AttendanceCodeServiceDto;
 import com.jaramgroupware.mms.service.AttendanceCodeService;
+import com.jaramgroupware.mms.service.AttendanceService;
+import com.jaramgroupware.mms.service.AttendanceTypeService;
 import com.jaramgroupware.mms.service.TimeTableService;
 import com.jaramgroupware.mms.utils.exception.CustomException;
 import com.jaramgroupware.mms.utils.exception.ErrorCode;
@@ -29,6 +32,12 @@ public class AttendanceCodeApiController {
     @Autowired
     private final AttendanceCodeService attendanceCodeService;
 
+    @Autowired
+    private final AttendanceTypeService attendanceTypeService;
+
+    @Autowired
+    private final AttendanceService attendanceService;
+
     private final KeyGenerator keyGenerator;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -39,7 +48,6 @@ public class AttendanceCodeApiController {
 
         logger.info("UID = ({}) Start create Attendance Code for TimeTable ID = ({})",uid,addRequestControllerDto.getTimeTableId());
 
-        //TODO 로직변경
         //해당 ID의 Time table이 있는지 검증
         timeTableService.findById(addRequestControllerDto.getTimeTableId());
 
@@ -48,7 +56,9 @@ public class AttendanceCodeApiController {
             throw new CustomException(ErrorCode.ALREADY_HAS_CODE);
 
         //코드 생성
+        //TODO 하드코딩 고치기
         String code = keyGenerator.getKey(6);
+
         attendanceCodeService.createCode(AttendanceCodeServiceDto.builder()
                 .minute(addRequestControllerDto.getMinute())
                 .code(code)
@@ -89,5 +99,26 @@ public class AttendanceCodeApiController {
         logger.info("UID = ({}), timeTableId = ({}) Get information, AttendanceCode = ({})",uid,timeTableId,result.toString());
 
         return new ResponseEntity<AttendanceCodeResponseControllerDto>(result,HttpStatus.OK);
+    }
+    @PostMapping("/register")
+    public ResponseEntity<Long> registerAttendanceCode(
+            @RequestBody @Valid AttendanceCodeRegisterRequestControllerDto attendanceCodeRegisterRequestControllerDto,
+            @RequestHeader("user_uid") String uid){
+
+        logger.info("UID = ({}) Try register Attendance Code. info = ({})",uid,attendanceCodeRegisterRequestControllerDto.toString());
+
+        //코드 검증하기
+        if(!attendanceCodeService.findKey
+                (attendanceCodeRegisterRequestControllerDto.getTimeTable().getId()).getCode()
+                .equals(attendanceCodeRegisterRequestControllerDto.getCode())) throw new CustomException(ErrorCode.ATTENDANCE_CODE_NOT_VALID);
+
+        //검증이 완료되었다면, 해당 코드 등록
+        //TODO 하드코딩 고치기
+        Long id = attendanceService.register(
+                attendanceCodeRegisterRequestControllerDto.toAttendanceServiceDto(
+                        attendanceTypeService.findById(1).toEntity()
+                )
+        );
+        return new ResponseEntity<Long>(id,HttpStatus.OK);
     }
 }

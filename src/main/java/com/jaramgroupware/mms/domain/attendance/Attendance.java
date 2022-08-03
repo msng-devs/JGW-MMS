@@ -8,6 +8,7 @@ import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -42,4 +43,13 @@ public class Attendance {
 
     @Column(name = "ATTENDANCE_INDEX")
     private String index;
+
+    public void update(Attendance attendance){
+        attendanceType = attendance.getAttendanceType();
+        defDateTime = DefDateTime.builder()
+                .createdDateTime(defDateTime.getCreatedDateTime())
+                .modifiedDataTime(LocalDateTime.now())
+                .build();
+        index = attendance.getIndex();
+    }
 }

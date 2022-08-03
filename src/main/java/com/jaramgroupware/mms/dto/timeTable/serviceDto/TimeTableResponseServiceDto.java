@@ -36,4 +36,5 @@ public class TimeTableResponseServiceDto {
                 .event(event)
                 .build();
     }
+
 }

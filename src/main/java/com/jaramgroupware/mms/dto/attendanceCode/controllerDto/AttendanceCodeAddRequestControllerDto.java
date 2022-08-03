@@ -19,7 +19,8 @@ public class AttendanceCodeAddRequestControllerDto {
     @Positive(message = "TimeTableID의 값이 적절하지 않습니다!")
     private Long timeTableId;
 
-    @NotNull
+    @NotNull(message = "코드의 유효 시간을 설정해주세요!")
+    //TODO 하드코딩 고치기
     @Range(min = 1,max = 1440,message = "최소 시간은 1분, 최대 시간은 1440분까지만 가능합니다.")
     private Integer minute;
 
