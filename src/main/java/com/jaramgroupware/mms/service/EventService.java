@@ -13,6 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 @RequiredArgsConstructor
 @Service
 public class EventService {
@@ -48,6 +52,14 @@ public class EventService {
                 .index(targetEvent.getIndex())
                 .defDateTime(targetEvent.getDefDateTime())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventResponseServiceDto> findAll(){
+
+        return eventRepository.findAllBy()
+                .stream().map(EventResponseServiceDto::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional

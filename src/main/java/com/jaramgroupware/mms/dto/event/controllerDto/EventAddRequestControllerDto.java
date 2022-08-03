@@ -1,5 +1,7 @@
 package com.jaramgroupware.mms.dto.event.controllerDto;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.jaramgroupware.mms.domain.DefDateTime;
 import com.jaramgroupware.mms.dto.event.serviceDto.EventAddRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
@@ -17,6 +19,8 @@ import java.time.format.DateTimeFormatter;
 @Getter
 @AllArgsConstructor
 @Builder
+@Data
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @DateTimeCheck(startDateTime = "startDateTime",endDateTime = "endDateTime")
 public class EventAddRequestControllerDto {
 

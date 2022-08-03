@@ -1,16 +1,13 @@
-package com.jaramgroupware.mms.dto.event.controllerDto;
+package com.jaramgroupware.mms.dto.timeTable.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventAddRequestServiceDto;
 import com.jaramgroupware.mms.dto.event.serviceDto.EventUpdateRequestServiceDto;
+import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableUpdateRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
-import com.jaramgroupware.mms.utils.validation.DateTimeValidation;
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
 
-import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -23,15 +20,12 @@ import java.time.LocalDateTime;
 @Data
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @DateTimeCheck(startDateTime = "startDateTime",endDateTime = "endDateTime")
-public class EventUpdateRequestControllerDto {
+public class TimeTableUpdateRequestControllerDto {
 
 
-    @NotEmpty(message = "Event 이름이 비워져있습니다!")
-    @Size(max = 50,min=1,message = "Event 이름은 1자 이상 50자 이하이여야 합니다.")
+    @NotEmpty(message = "이름이 비워져있습니다!")
+    @Size(max = 50,min=1,message = "이름은 1자 이상 50자 이하이여야 합니다.")
     private String name;
-
-    private String index;
-
 
     @NotNull(message = "startTime 은 반드시 입력해야 합니다!")
 //    @FutureOrPresent(message = "startTime에 과거 시간은 사용할 수 없습니다!")
@@ -43,12 +37,13 @@ public class EventUpdateRequestControllerDto {
     private LocalDateTime endDateTime;
 
 
-    public EventUpdateRequestServiceDto toServiceDto(){
-        return EventUpdateRequestServiceDto.builder()
+    public TimeTableUpdateRequestServiceDto toServiceDto(){
+        return TimeTableUpdateRequestServiceDto.builder()
                 .name(name)
-                .index(index)
-                .startDateTime(startDateTime)
-                .endDateTime(endDateTime)
+                .defDateTime(DefDateTime.builder()
+                        .createdDateTime(startDateTime)
+                        .modifiedDataTime(endDateTime)
+                        .build())
                 .build();
     }
 }

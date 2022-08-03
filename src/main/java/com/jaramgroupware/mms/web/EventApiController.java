@@ -4,7 +4,11 @@ package com.jaramgroupware.mms.web;
 import com.jaramgroupware.mms.dto.event.controllerDto.EventAddRequestControllerDto;
 import com.jaramgroupware.mms.dto.event.controllerDto.EventResponseControllerDto;
 import com.jaramgroupware.mms.dto.event.controllerDto.EventUpdateRequestControllerDto;
+import com.jaramgroupware.mms.dto.event.serviceDto.EventResponseServiceDto;
 import com.jaramgroupware.mms.service.EventService;
+import com.jaramgroupware.mms.utils.exception.CustomException;
+import com.jaramgroupware.mms.utils.exception.ErrorCode;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
@@ -37,7 +43,7 @@ public class EventApiController {
     }
 
     @GetMapping("{eventId}")
-    public ResponseEntity<EventResponseControllerDto> getEvent(
+    public ResponseEntity<EventResponseControllerDto> getEventById(
             @PathVariable Long eventId,
             @RequestHeader("user_uid") String uid){
 
@@ -49,6 +55,24 @@ public class EventApiController {
 
         return new ResponseEntity<EventResponseControllerDto>(result, HttpStatus.OK);
     }
+
+    @GetMapping
+    public ResponseEntity<List<EventResponseControllerDto>> getEventAll(
+            @RequestHeader("user_uid") String uid){
+
+        logger.info("UID = ({}) Try find All Event's info",uid);
+
+        List<EventResponseControllerDto> results = eventService.findAll()
+                .stream().map(EventResponseServiceDto::toControllerDto)
+                .collect(Collectors.toList());
+
+        if(results.size() == 0) throw new CustomException(ErrorCode.EMPTY_EVENT);
+
+        logger.info("UID = ({}) Successfully find All events",uid);
+
+        return new ResponseEntity<List<EventResponseControllerDto>>(results, HttpStatus.OK);
+    }
+
 
     @DeleteMapping("{eventId}")
     public ResponseEntity<Long> delEvent(

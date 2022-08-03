@@ -17,7 +17,10 @@ import java.time.Duration;
 public class AttendanceCodeService {
 
     @Autowired
-    private RedisTemplate<String, Long> redisTemplate;
+    private final RedisTemplate<String,Long> redisTemplate;
+
+    @Autowired
+    private final RedisTemplate<Long,String> redisTemplateId;
 
     @Transactional
     public String createCode(AttendanceCodeServiceDto attendanceCodeDto){
@@ -25,9 +28,14 @@ public class AttendanceCodeService {
         ValueOperations<String, Long> valueOperations = redisTemplate.opsForValue();
         valueOperations.set(attendanceCodeDto.getCode(),attendanceCodeDto.getTimeTableId());
         redisTemplate.expire(attendanceCodeDto.getCode(), Duration.ofMinutes(attendanceCodeDto.getMinute()));
-        return attendanceCodeDto.getCode();
 
+        ValueOperations<Long, String> valueOperationsId = redisTemplateId.opsForValue();
+        valueOperationsId.set(attendanceCodeDto.getTimeTableId(),attendanceCodeDto.getCode());
+        redisTemplateId.expire(attendanceCodeDto.getTimeTableId(), Duration.ofMinutes(attendanceCodeDto.getMinute()));
+
+        return attendanceCodeDto.getCode();
     }
+
 
     @Transactional
     public void revokeCode(String key){
@@ -52,6 +60,28 @@ public class AttendanceCodeService {
         return AttendanceCodeServiceDto.builder()
                 .code(key)
                 .timeTableId(timeTableId)
+                .minute(redisTemplate.getExpire(key).intValue())
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public boolean checkHasKey(Long id){
+
+        ValueOperations<Long,String> valueOperations = redisTemplateId.opsForValue();
+
+        String key = valueOperations.get(id);
+        return key != null;
+    }
+
+    @Transactional(readOnly = true)
+    public AttendanceCodeServiceDto findKeyById(Long id){
+
+        ValueOperations<Long,String> valueOperations = redisTemplateId.opsForValue();
+
+        String key = valueOperations.get(id);
+        if(key == null) throw new CustomException(ErrorCode.INVALID_TIMETABLE_ID);
+        return AttendanceCodeServiceDto.builder()
+                .code(key)
+                .timeTableId(id)
                 .minute(redisTemplate.getExpire(key).intValue())
                 .build();
     }

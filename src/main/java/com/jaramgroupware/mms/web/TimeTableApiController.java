@@ -3,11 +3,23 @@ package com.jaramgroupware.mms.web;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeAddRequestControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.serviceDto.AttendanceCodeServiceDto;
+import com.jaramgroupware.mms.dto.event.controllerDto.EventAddRequestControllerDto;
+import com.jaramgroupware.mms.dto.event.controllerDto.EventResponseControllerDto;
+import com.jaramgroupware.mms.dto.event.controllerDto.EventUpdateRequestControllerDto;
+import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableAddRequestControllerDto;
+import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableResponseControllerDto;
+import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableUpdateRequestControllerDto;
+import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableAddRequestServiceDto;
+import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableResponseServiceDto;
 import com.jaramgroupware.mms.service.AttendanceCodeService;
+import com.jaramgroupware.mms.service.EventService;
 import com.jaramgroupware.mms.service.TimeTableService;
 import com.jaramgroupware.mms.utils.exception.CustomException;
 import com.jaramgroupware.mms.utils.exception.ErrorCode;
 import com.jaramgroupware.mms.utils.key.KeyGenerator;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +28,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
@@ -23,77 +37,85 @@ import javax.validation.Valid;
 public class TimeTableApiController {
 
     private final TimeTableService timeTableService;
+    private final EventService eventService;
     private final AttendanceCodeService attendanceCodeService;
     private final KeyGenerator keyGenerator;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @PostMapping("/code")
-    public ResponseEntity<String> createdAttendanceCode(
-            @RequestBody @Valid AttendanceCodeAddRequestControllerDto addRequestControllerDto,
+
+    @PostMapping
+    public ResponseEntity<Long> addTimeTable(
+            @RequestBody @Valid TimeTableAddRequestControllerDto timeTableAddRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Start create Attendance Code for TimeTable ID = ({})",uid,addRequestControllerDto.getTimeTableId());
+        logger.info("UID = ({}) Request Add new timetable, TimeTable = ({})",uid,timeTableAddRequestControllerDto.toString());
 
-        //해당 ID의 Time table이 있는지 검증
-        timeTableService.findById(addRequestControllerDto.getTimeTableId());
+        Long id = timeTableService.add(
+                timeTableAddRequestControllerDto.toServiceDto(
+                        eventService.findById(timeTableAddRequestControllerDto.getEventId()).toEntity()
+                )
+        );
 
-        //랜덤 문자열 생성 6자리
-        String key = "";
+        logger.info("UID = ({}) Successfully Add new TimeTable, EventId = ({})",uid,id);
 
-        //키 생성 한도는 100회로 제한(무한 루프 빠지는거 방지)
-        for (int i = 0; i < 100; i++) {
-            String idxKey  = keyGenerator.getKey(6);
-            if(attendanceCodeService.validationKey(key)){
-                key = idxKey;
-                break;
-            }
-        }
-
-        //키 생성이 안됬다면, 무한 루프 방지를 위하여 중단
-        if(key.equals("")) throw new CustomException(ErrorCode.CANNOT_CREATE_KEY);
-
-        //정상적으로 키가 생성됬다면, redis 에 등록
-        attendanceCodeService.createCode(AttendanceCodeServiceDto
-                .builder()
-                .code(key)
-                .timeTableId(addRequestControllerDto.getTimeTableId())
-                .minute(addRequestControllerDto.getMinute())
-                .build());
-
-        logger.info("UID = ({}) Successfully create Attendance Code, target TimeTable ID = ({}) code = ({})",uid,addRequestControllerDto.getTimeTableId(),key);
-
-        return new ResponseEntity<String>(key, HttpStatus.OK);
+        return new ResponseEntity<Long>(id,HttpStatus.OK);
     }
 
-    @DeleteMapping("/code/{code}")
-    public ResponseEntity<String> revokeAttendanceCode(
-            @PathVariable String code,
+    @GetMapping("{timeTableId}")
+    public ResponseEntity<TimeTableResponseControllerDto> findTimeTableById(
+            @PathVariable Long timeTableId,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}), Code = ({}) Start revoke code",uid,code);
+        logger.info("UID = ({}) Try find TimeTable's info, TimeTableId = ({})",uid,timeTableId);
 
-        //해당 키가 존재하는지 확인
-        if(attendanceCodeService.validationKey(code)) throw new CustomException(ErrorCode.INVALID_ATTENDANCE_CODE);
+        TimeTableResponseControllerDto result = timeTableService.findById(timeTableId).toControllerDto();
 
-        attendanceCodeService.revokeCode(code);
+        logger.info("UID = ({}) Successfully find timeTable, TimeTable = ({})",uid,result.toString());
 
-        logger.info("UID = ({}), code = ({}) Successfully revoke Attendance Code",uid,code);
-
-        return new ResponseEntity<String>(code, HttpStatus.OK);
+        return new ResponseEntity<TimeTableResponseControllerDto>(result,HttpStatus.OK);
     }
 
-    @GetMapping("/code/{code}")
-    public ResponseEntity<AttendanceCodeResponseControllerDto> findAttendanceCode(
-            @PathVariable String code,
+    @GetMapping
+    public ResponseEntity<List<TimeTableResponseControllerDto>> findTimeTableAll(
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}), code = ({}) Find code's information",uid,code);
+        logger.info("UID = ({}) Try find All TimeTable's info",uid);
 
-        AttendanceCodeServiceDto result = attendanceCodeService.findKey(code);
+        List<TimeTableResponseControllerDto> results = timeTableService.findAll().stream()
+                .map(TimeTableResponseServiceDto::toControllerDto)
+                .collect(Collectors.toList());
 
-        logger.info("UID = ({}), code = ({}) Get information, TimeTableId = ({}), expireTime = ({})",uid,code,result.getTimeTableId(),result.getMinute());
+        logger.info("UID = ({}) Successfully find All timeTables",uid);
 
-        return new ResponseEntity<AttendanceCodeResponseControllerDto>(result.toControllerDto(),HttpStatus.OK);
+        return new ResponseEntity<List<TimeTableResponseControllerDto>>(results,HttpStatus.OK);
+    }
 
+    @DeleteMapping("{timeTableId}")
+    public ResponseEntity<Long> delTimeTable(
+            @PathVariable Long timeTableId,
+            @RequestHeader("user_uid") String uid){
+
+        logger.info("UID = ({}) Try delete timeTable, TimeTableId = ({})",uid,timeTableId);
+
+        timeTableService.delete(timeTableId);
+
+        logger.info("UID = ({}) Successfully delete timeTable, TimeTableId = ({})",uid,timeTableId);
+
+        return new ResponseEntity<Long>(timeTableId, HttpStatus.OK);
+    }
+
+    @PutMapping("{eventId}")
+    public ResponseEntity<TimeTableResponseControllerDto> updateTimeTable(
+            @PathVariable Long eventId,
+            @RequestBody @Valid TimeTableUpdateRequestControllerDto timeTableUpdateRequestControllerDto,
+            @RequestHeader("user_uid") String uid){
+
+        logger.info("UID = ({}) Try update Event,  TimeTableID = ({})",uid,eventId);
+
+        TimeTableResponseControllerDto result = timeTableService.update(eventId,timeTableUpdateRequestControllerDto.toServiceDto()).toControllerDto();
+
+        logger.info("UID = ({}) Successfully update event,  TimeTable = ({})",uid,result.toString());
+
+        return new ResponseEntity<TimeTableResponseControllerDto>(result, HttpStatus.OK);
     }
 }

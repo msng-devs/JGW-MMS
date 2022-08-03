@@ -21,12 +21,20 @@ public class TimeTable {
     @Column(name = "TIMETABLE_PK")
     private Long id;
 
+    @Column(name = "TIMETABLE_NM",length = 50)
+    private String name;
+
     @Embedded
     @AttributeOverride(name = "createdDateTime",column = @Column(name = "TIMETABLE_START_DTTM"))
     @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "TIMETABLE_END_DTTM"))
     private DefDateTime defDateTime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "EVENT_EVENT_PK",nullable = false)
     private Event event;
+
+    public void update(TimeTable timeTable){
+        name = timeTable.getName();
+        defDateTime = timeTable.getDefDateTime();
+    }
 }

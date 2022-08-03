@@ -1,8 +1,8 @@
-package com.jaramgroupware.mms.dto.event.controllerDto;
+package com.jaramgroupware.mms.dto.timeTable.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.jaramgroupware.mms.domain.event.Event;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @Builder
-public class EventResponseControllerDto {
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+public class TimeTableResponseControllerDto {
 
     private Long id;
     private String name;
-    private String index;
+    private Event event;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
 
