@@ -58,6 +58,7 @@ public class EventService {
     public List<EventResponseServiceDto> findAll(){
 
         return eventRepository.findAllBy()
+                .orElseThrow(()-> new CustomException(ErrorCode.EMPTY_EVENT))
                 .stream().map(EventResponseServiceDto::new)
                 .collect(Collectors.toList());
     }

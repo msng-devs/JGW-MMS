@@ -66,8 +66,6 @@ public class EventApiController {
                 .stream().map(EventResponseServiceDto::toControllerDto)
                 .collect(Collectors.toList());
 
-        if(results.size() == 0) throw new CustomException(ErrorCode.EMPTY_EVENT);
-
         logger.info("UID = ({}) Successfully find All events",uid);
 
         return new ResponseEntity<List<EventResponseControllerDto>>(results, HttpStatus.OK);
