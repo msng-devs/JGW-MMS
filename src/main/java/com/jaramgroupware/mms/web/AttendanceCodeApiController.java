@@ -39,6 +39,7 @@ public class AttendanceCodeApiController {
 
         logger.info("UID = ({}) Start create Attendance Code for TimeTable ID = ({})",uid,addRequestControllerDto.getTimeTableId());
 
+        //TODO 로직변경
         //해당 ID의 Time table이 있는지 검증
         timeTableService.findById(addRequestControllerDto.getTimeTableId());
 
@@ -46,78 +47,47 @@ public class AttendanceCodeApiController {
         if(attendanceCodeService.checkHasKey(addRequestControllerDto.getTimeTableId()))
             throw new CustomException(ErrorCode.ALREADY_HAS_CODE);
 
-        //랜덤 문자열 생성 6자리
-        String key = "";
-
-        //키 생성 한도는 100회로 제한(무한 루프 빠지는거 방지)
-        for (int i = 0; i < 100; i++) {
-            String idxKey  = keyGenerator.getKey(6);
-            if(attendanceCodeService.validationKey(key)){
-                key = idxKey;
-                break;
-            }
-        }
-
-        //키 생성이 안됬다면, 무한 루프 방지를 위하여 중단
-        if(key.equals("")) throw new CustomException(ErrorCode.CANNOT_CREATE_KEY);
-
-        //정상적으로 키가 생성됬다면, redis 에 등록
-        attendanceCodeService.createCode(AttendanceCodeServiceDto
-                .builder()
-                .code(key)
-                .timeTableId(addRequestControllerDto.getTimeTableId())
+        //코드 생성
+        String code = keyGenerator.getKey(6);
+        attendanceCodeService.createCode(AttendanceCodeServiceDto.builder()
                 .minute(addRequestControllerDto.getMinute())
+                .code(code)
+                .timeTableId(addRequestControllerDto.getTimeTableId())
                 .build());
 
-        logger.info("UID = ({}) Successfully create Attendance Code, target TimeTable ID = ({}) code = ({})",uid,addRequestControllerDto.getTimeTableId(),key);
-
-        return new ResponseEntity<String>(key, HttpStatus.OK);
-    }
-
-    @DeleteMapping("/{code}")
-    public ResponseEntity<String> revokeAttendanceCode(
-            @PathVariable String code,
-            @RequestHeader("user_uid") String uid){
-
-        logger.info("UID = ({}), Code = ({}) Start revoke code",uid,code);
-
-        //해당 키가 존재하는지 확인
-        if(attendanceCodeService.validationKey(code)) throw new CustomException(ErrorCode.INVALID_ATTENDANCE_CODE);
-
-        attendanceCodeService.revokeCode(code);
-
-        logger.info("UID = ({}), code = ({}) Successfully revoke Attendance Code",uid,code);
+        logger.info("UID = ({}) Successfully create Attendance Code, target TimeTable ID = ({}) code = ({})",uid,addRequestControllerDto.getTimeTableId(),code);
 
         return new ResponseEntity<String>(code, HttpStatus.OK);
     }
 
-    @GetMapping("/{code}")
-    public ResponseEntity<AttendanceCodeResponseControllerDto> findAttendanceCode(
-            @PathVariable String code,
+    @DeleteMapping("/{timeTableId}")
+    public ResponseEntity<Long> revokeAttendanceCode(
+            @PathVariable Long timeTableId,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}), code = ({}) Find code's information",uid,code);
+        logger.info("UID = ({}), timeTableId = ({}) Start revoke code",uid,timeTableId);
 
-        AttendanceCodeServiceDto result = attendanceCodeService.findKey(code);
+        //해당 키가 존재하는지 확인
+        if(attendanceCodeService.validationKey(timeTableId)) throw new CustomException(ErrorCode.INVALID_TIMETABLE_ID);
 
-        logger.info("UID = ({}), code = ({}) Get information, TimeTableId = ({}), expireTime = ({})",uid,code,result.getTimeTableId(),result.getMinute());
+        attendanceCodeService.revokeCode(timeTableId);
 
-        return new ResponseEntity<AttendanceCodeResponseControllerDto>(result.toControllerDto(),HttpStatus.OK);
+        logger.info("UID = ({}), timeTableId = ({}) Successfully revoke Attendance Code",uid,timeTableId);
 
+        return new ResponseEntity<Long>(timeTableId, HttpStatus.OK);
     }
 
-    @GetMapping
+    @GetMapping("/{timeTableId}")
     public ResponseEntity<AttendanceCodeResponseControllerDto> findAttendanceCode(
-            @RequestParam("time-table-id") Long timeTableID,
+            @PathVariable Long timeTableId,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}), timeTableID = ({}) Find code's information",uid,timeTableID);
+        logger.info("UID = ({}), code = ({}) Find code's information",uid,timeTableId);
 
-        AttendanceCodeServiceDto result = attendanceCodeService.findKeyById(timeTableID);
+        AttendanceCodeResponseControllerDto result = attendanceCodeService.findKey(timeTableId).toControllerDto();
 
-        logger.info("UID = ({}), timeTableID = ({}) Get information, TimeTableId = ({}), expireTime = ({})",uid,timeTableID,result.getTimeTableId(),result.getMinute());
+        logger.info("UID = ({}), timeTableId = ({}) Get information, AttendanceCode = ({})",uid,timeTableId,result.toString());
 
-        return new ResponseEntity<AttendanceCodeResponseControllerDto>(result.toControllerDto(),HttpStatus.OK);
-
+        return new ResponseEntity<AttendanceCodeResponseControllerDto>(result,HttpStatus.OK);
     }
 }

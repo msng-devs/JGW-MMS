@@ -17,72 +17,54 @@ import java.time.Duration;
 public class AttendanceCodeService {
 
     @Autowired
-    private final RedisTemplate<String,Long> redisTemplate;
-
-    @Autowired
-    private final RedisTemplate<Long,String> redisTemplateId;
+    private final RedisTemplate<Long,String> redisTemplate;
 
     @Transactional
     public String createCode(AttendanceCodeServiceDto attendanceCodeDto){
 
-        ValueOperations<String, Long> valueOperations = redisTemplate.opsForValue();
-        valueOperations.set(attendanceCodeDto.getCode(),attendanceCodeDto.getTimeTableId());
-        redisTemplate.expire(attendanceCodeDto.getCode(), Duration.ofMinutes(attendanceCodeDto.getMinute()));
-
-        ValueOperations<Long, String> valueOperationsId = redisTemplateId.opsForValue();
-        valueOperationsId.set(attendanceCodeDto.getTimeTableId(),attendanceCodeDto.getCode());
-        redisTemplateId.expire(attendanceCodeDto.getTimeTableId(), Duration.ofMinutes(attendanceCodeDto.getMinute()));
-
+        ValueOperations<Long,String> valueOperations = redisTemplate.opsForValue();
+        valueOperations.set(attendanceCodeDto.getTimeTableId(),attendanceCodeDto.getCode());
+        redisTemplate.expire(attendanceCodeDto.getTimeTableId(), Duration.ofMinutes(attendanceCodeDto.getMinute()));
         return attendanceCodeDto.getCode();
     }
 
 
     @Transactional
-    public void revokeCode(String key){
-        redisTemplate.delete(key);
+    public void revokeCode(Long timeTableId){
+        redisTemplate.delete(timeTableId);
     }
 
     @Transactional(readOnly = true)
-    public boolean validationKey(String key){
+    public boolean validationKey(Long timeTableId){
 
-        ValueOperations<String, Long> valueOperations = redisTemplate.opsForValue();
-        return valueOperations.get(key) == null;
+        ValueOperations<Long,String> valueOperations = redisTemplate.opsForValue();
+        return valueOperations.get(timeTableId) == null;
 
     }
 
     @Transactional(readOnly = true)
-    public AttendanceCodeServiceDto findKey(String key){
-        ValueOperations<String, Long> valueOperations = redisTemplate.opsForValue();
-        Long timeTableId = valueOperations.get(key);
+    public AttendanceCodeServiceDto findKey(Long timeTableId){
 
-        if(timeTableId == null) throw new CustomException(ErrorCode.INVALID_ATTENDANCE_CODE);
+        ValueOperations<Long,String> valueOperations = redisTemplate.opsForValue();
+
+        String code = valueOperations.get(timeTableId);
+
+        if(code == null) throw new CustomException(ErrorCode.INVALID_TIMETABLE_ID);
 
         return AttendanceCodeServiceDto.builder()
-                .code(key)
+                .code(code)
                 .timeTableId(timeTableId)
-                .minute(redisTemplate.getExpire(key).intValue())
+                .minute(redisTemplate.getExpire(timeTableId).intValue())
                 .build();
     }
+
     @Transactional(readOnly = true)
-    public boolean checkHasKey(Long id){
+    public boolean checkHasKey(Long timeTableId){
 
-        ValueOperations<Long,String> valueOperations = redisTemplateId.opsForValue();
+        ValueOperations<Long,String> valueOperations = redisTemplate.opsForValue();
 
-        String key = valueOperations.get(id);
+        String key = valueOperations.get(timeTableId);
         return key != null;
     }
 
-    @Transactional(readOnly = true)
-    public AttendanceCodeServiceDto findKeyById(Long id){
-
-        ValueOperations<Long,String> valueOperations = redisTemplateId.opsForValue();
-
-        String key = valueOperations.get(id);
-        if(key == null) throw new CustomException(ErrorCode.INVALID_TIMETABLE_ID);
-        return AttendanceCodeServiceDto.builder()
-                .code(key)
-                .timeTableId(id)
-                .minute(redisTemplate.getExpire(key).intValue())
-                .build();
-    }
 }

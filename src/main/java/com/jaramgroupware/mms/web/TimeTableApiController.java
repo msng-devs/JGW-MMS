@@ -38,8 +38,6 @@ public class TimeTableApiController {
 
     private final TimeTableService timeTableService;
     private final EventService eventService;
-    private final AttendanceCodeService attendanceCodeService;
-    private final KeyGenerator keyGenerator;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 
