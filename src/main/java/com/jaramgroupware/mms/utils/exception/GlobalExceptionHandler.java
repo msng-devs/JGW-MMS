@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,15 +59,31 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException exception, WebRequest request){
+    public Object processValidationError(MethodArgumentNotValidException exception, WebRequest request) {
         logger.info("UID = ({}) Request = ({}) Raise = ({})",
                 request.getHeader("user_uid"),
                 request.getContextPath(),
                 "MethodArgumentNotValidException"
         );
-        Map<String, String> errors = new HashMap<>();
-        exception.getBindingResult().getAllErrors()
-                .forEach(c -> errors.put(((FieldError) c).getField(), c.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(errors);
+        BindingResult bindingResult = exception.getBindingResult();
+        StringBuilder builder = new StringBuilder();
+        builder.append("잘못된 입력값이 존재합니다! ");
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            builder.append("필드명 : (");
+            builder.append(fieldError.getField());
+            builder.append(") 오류 메시지: (");
+            builder.append(fieldError.getDefaultMessage());
+            builder.append(") 입력된 값: ");
+            builder.append(fieldError.getRejectedValue());
+            builder.append(" // ");
+        }
+
+        return new ResponseEntity(ExceptionMessageDto.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .type(null)
+                .title("METHOD_ARGUMENT_NOT_VALID")
+                .detail(builder.toString())
+                .build()
+                ,HttpStatus.BAD_REQUEST);
     }
 }

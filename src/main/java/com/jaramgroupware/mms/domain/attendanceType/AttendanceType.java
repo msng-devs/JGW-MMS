@@ -7,8 +7,9 @@ import javax.persistence.*;
 @Getter
 @Setter
 @ToString
-@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "ATTENDANCE_TYPE")
 public class AttendanceType {
 

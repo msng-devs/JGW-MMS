@@ -1,14 +1,11 @@
 package com.jaramgroupware.mms.dto.attendanceCode.serviceDto;
 
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeResponseControllerDto;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 @ToString
 @Getter
-@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AttendanceCodeServiceDto {
 

@@ -12,8 +12,9 @@ import javax.validation.constraints.Email;
 @Getter
 @Setter
 @ToString
-@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "MEMBER")
 public class Member {
 

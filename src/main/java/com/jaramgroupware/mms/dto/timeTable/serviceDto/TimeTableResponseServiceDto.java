@@ -3,15 +3,13 @@ package com.jaramgroupware.mms.dto.timeTable.serviceDto;
 import com.jaramgroupware.mms.domain.DefDateTime;
 import com.jaramgroupware.mms.domain.event.Event;
 import com.jaramgroupware.mms.domain.timeTable.TimeTable;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 
 @ToString
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class TimeTableResponseServiceDto {
 

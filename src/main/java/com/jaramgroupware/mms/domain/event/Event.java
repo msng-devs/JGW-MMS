@@ -8,17 +8,20 @@ import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity(name = "EVENT")
 public class Event {
 
     @Id
     @Column(name = "EVENT_PK")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
 
@@ -34,6 +37,11 @@ public class Event {
     @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "EVENT_END_DTTM"))
     private DefDateTime defDateTime;
 
+    public void update(Event newEvent){
+        name = newEvent.getName();
+        index = newEvent.getIndex();
+        defDateTime = newEvent.getDefDateTime();
+    }
 
 }
 

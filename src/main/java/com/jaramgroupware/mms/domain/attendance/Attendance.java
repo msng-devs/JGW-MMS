@@ -13,6 +13,7 @@ import javax.persistence.*;
 @Setter
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity(name = "ATTENDANCE")
 public class Attendance {

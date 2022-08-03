@@ -6,9 +6,10 @@ import javax.persistence.*;
 
 @Getter
 @Setter
-@Builder
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "ROLE")
 public class Role {
 

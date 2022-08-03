@@ -9,8 +9,9 @@ import javax.persistence.*;
 @Getter
 @Setter
 @ToString
-@Builder
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "PENALTY")
 public class Penalty {
 

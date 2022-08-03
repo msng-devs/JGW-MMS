@@ -1,16 +1,13 @@
 package com.jaramgroupware.mms.dto.attendanceCode.controllerDto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 
 @ToString
 @Getter
-@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AttendanceCodeAddRequestControllerDto {
 

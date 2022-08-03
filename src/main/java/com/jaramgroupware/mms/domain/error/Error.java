@@ -8,6 +8,7 @@ import javax.persistence.*;
 @Setter
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity(name = "ERROR")
 public class Error {

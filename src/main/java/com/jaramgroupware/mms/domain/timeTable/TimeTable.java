@@ -9,9 +9,10 @@ import javax.persistence.*;
 
 @Getter
 @Setter
-@Builder
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "TIMETABLE")
 public class TimeTable {
 

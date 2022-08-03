@@ -1,14 +1,12 @@
 package com.jaramgroupware.mms.dto.exception.controllerDto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.http.HttpStatus;
 
 @ToString
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ExceptionMessageDto {
     private HttpStatus status;
