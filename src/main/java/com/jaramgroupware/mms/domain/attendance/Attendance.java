@@ -1,14 +1,16 @@
 package com.jaramgroupware.mms.domain.attendance;
 
 
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.attendanceType.AttendanceType;
 import com.jaramgroupware.mms.domain.member.Member;
 import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
+import java.io.Serializable;
 
 @Getter
 @Setter
@@ -16,40 +18,45 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@AttributeOverrides({
+        @AttributeOverride(name = "createdDateTime",column = @Column(name = "ATTENDANCE_CREATED_DTTM")),
+        @AttributeOverride(name = "modifiedDateTime",column = @Column(name = "ATTENDANCE_MODIFIED_DTTM")),
+        @AttributeOverride(name = "createBy",column = @Column(name = "ATTENDANCE_CREATED_BY",length = 30)),
+        @AttributeOverride(name = "modifiedBy",column = @Column(name = "ATTENDANCE_MODIFIED_BY",length = 30)),
+})
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @Entity(name = "ATTENDANCE")
-public class Attendance {
+@IdClass(AttendanceID.class)
+public class Attendance extends BaseEntity implements Serializable{
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ATTENDANCE_PK")
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "ATTENDANCE_TYPE_ATTENDANCE_TYPE_PK",nullable = false)
-    private AttendanceType attendanceType;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MEMBER_MEMBER_PK",nullable = false)
     private Member member;
 
-    @Embedded
-    @AttributeOverride(name = "createdDateTime",column = @Column(name = "ATTENDANCE_CREATED_DTTM"))
-    @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "ATTENDANCE_MODIFIED_DTTM"))
-    private DefDateTime defDateTime;
-
+    @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TIMETABLE_TIMETABLE_PK",nullable = false)
     private TimeTable timeTable;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ATTENDANCE_TYPE_ATTENDANCE_TYPE_PK",nullable = false)
+    private AttendanceType attendanceType;
+
     @Column(name = "ATTENDANCE_INDEX")
     private String index;
 
-    public void update(Attendance attendance){
+    public void update(Attendance attendance,String modified){
         attendanceType = attendance.getAttendanceType();
-        defDateTime = DefDateTime.builder()
-                .createdDateTime(defDateTime.getCreatedDateTime())
-                .modifiedDataTime(LocalDateTime.now())
-                .build();
         index = attendance.getIndex();
+        modifiedBy = modified;
     }
+
+    public AttendanceID getId(){
+        return AttendanceID.builder()
+                .member(member)
+                .timeTable(timeTable)
+                .build();
+    }
+
 }

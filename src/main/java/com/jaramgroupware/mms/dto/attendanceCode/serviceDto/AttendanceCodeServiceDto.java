@@ -6,6 +6,7 @@ import lombok.*;
 @ToString
 @Getter
 @AllArgsConstructor
+@EqualsAndHashCode
 @Builder
 public class AttendanceCodeServiceDto {
 

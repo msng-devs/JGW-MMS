@@ -1,11 +1,13 @@
 package com.jaramgroupware.mms.domain.timeTable;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.event.Event;
-import com.jaramgroupware.mms.domain.member.Member;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -13,8 +15,16 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
+@AttributeOverrides({
+        @AttributeOverride(name = "createdDateTime",column = @Column(name = "TIMETABLE_CREATED_DTTM")),
+        @AttributeOverride(name = "modifiedDateTime",column = @Column(name = "TIMETABLE_MODIFIED_DTTM")),
+        @AttributeOverride(name = "createBy",column = @Column(name = "TIMETABLE_CREATED_BY",length = 30)),
+        @AttributeOverride(name = "modifiedBy",column = @Column(name = "TIMETABLE_MODIFIED_BY",length = 30)),
+})
 @Entity(name = "TIMETABLE")
-public class TimeTable {
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+public class TimeTable extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,17 +34,23 @@ public class TimeTable {
     @Column(name = "TIMETABLE_NM",length = 50)
     private String name;
 
-    @Embedded
-    @AttributeOverride(name = "createdDateTime",column = @Column(name = "TIMETABLE_START_DTTM"))
-    @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "TIMETABLE_END_DTTM"))
-    private DefDateTime defDateTime;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "EVENT_EVENT_PK",nullable = false)
     private Event event;
 
-    public void update(TimeTable timeTable){
+    @Column(name = "TIMETABLE_START_DTTM")
+    private LocalDateTime startDateTime;
+
+    @Column(name = "TIMETABLE_END_DTTM")
+    private LocalDateTime endDateTime;
+
+    public void update(TimeTable timeTable,String who){
+
         name = timeTable.getName();
-        defDateTime = timeTable.getDefDateTime();
+        startDateTime = timeTable.getStartDateTime();
+        endDateTime = timeTable.getEndDateTime();
+        modifiedBy = who;
     }
+
+
 }

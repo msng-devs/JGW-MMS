@@ -1,21 +1,13 @@
 package com.jaramgroupware.mms.dto.member.serviceDto;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.domain.event.Event;
 import com.jaramgroupware.mms.domain.major.Major;
 import com.jaramgroupware.mms.domain.member.Member;
 import com.jaramgroupware.mms.domain.rank.Rank;
 import com.jaramgroupware.mms.domain.role.Role;
-import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import lombok.*;
 
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.Date;
 
 @ToString
 @Getter
@@ -33,6 +25,8 @@ public class MemberAddRequestServiceDto {
     private Rank rank;
     private Role role;
     private Integer year;
+    private boolean leaveAbsence;
+    private LocalDate dateOfBirth;
 
     public Member toEntity(){
         return Member.builder()
@@ -45,6 +39,12 @@ public class MemberAddRequestServiceDto {
                 .rank(rank)
                 .role(role)
                 .year((year != null)? year : LocalDate.now().getYear()-1984)
+                .leaveAbsence(leaveAbsence)
+                .dateOfBirth(dateOfBirth)
                 .build();
+    }
+    @Override
+    public boolean equals(Object o){
+        return this.toString().equals(o.toString());
     }
 }

@@ -1,8 +1,12 @@
 package com.jaramgroupware.mms.domain.penalty;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.member.Member;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 
@@ -12,31 +16,36 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@AttributeOverrides({
+        @AttributeOverride(name = "createdDateTime",column = @Column(name = "PENALTY_CREATED_DTTM")),
+        @AttributeOverride(name = "modifiedDateTime",column = @Column(name = "PENALTY_MODIFIED_DTTM")),
+        @AttributeOverride(name = "createBy",column = @Column(name = "PENALTY_CREATED_BY",length = 30)),
+        @AttributeOverride(name = "modifiedBy",column = @Column(name = "PENALTY_MODIFIED_BY",length = 30)),
+})
 @Entity(name = "PENALTY")
-public class Penalty {
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+public class Penalty extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="PENALTY_PK")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MEMBER_MEMBER_PK",nullable = false)
     private Member targetMember;
-
-    @ManyToOne
-    @JoinColumn(name = "MEMBER_MEMBER_PK_GIVER",nullable = false)
-    private Member giverMember;
-
-    @Embedded
-    @AttributeOverride(name = "createdDateTime",column = @Column(name = "PENALTY_CREATED_DTTM"))
-    @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "PENALTY_MODIFIED_DTTM"))
-    private DefDateTime defDateTime;
 
     @Column(name = "PENALTY_TYPE",nullable = false)
     private boolean type;
 
     @Column(name = "PENALTY_REASON",nullable = false)
     private String reason;
+
+    public void update(Penalty penalty,String who){
+        type = penalty.isType();
+        reason = penalty.getReason();
+        modifiedBy = who;
+    }
+
 
 }

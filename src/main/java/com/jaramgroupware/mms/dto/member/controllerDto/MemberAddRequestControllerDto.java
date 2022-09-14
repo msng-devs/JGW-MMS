@@ -2,19 +2,16 @@ package com.jaramgroupware.mms.dto.member.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.domain.event.Event;
 import com.jaramgroupware.mms.domain.major.Major;
 import com.jaramgroupware.mms.domain.rank.Rank;
 import com.jaramgroupware.mms.domain.role.Role;
 import com.jaramgroupware.mms.dto.member.serviceDto.MemberAddRequestServiceDto;
-import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableAddRequestServiceDto;
-import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.persistence.*;
 import javax.validation.constraints.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.Date;
 
 @ToString
 @Getter
@@ -43,18 +40,24 @@ public class MemberAddRequestControllerDto {
     @Size(max = 10,min=10,message = "학생번호는 10자리여이야 합니다!")
     private String studentID;
 
-    @NotEmpty(message = "전공 정보가 비여있습니다!")
-    private Major major;
+    @NotNull(message = "전공 정보가 비여있습니다!")
+    private Integer majorId;
 
-    @NotEmpty(message = "회원 등급 정보가 없습니다!")
-    private Rank rank;
+    @NotNull(message = "회원 등급 정보가 없습니다!")
+    private Integer rankId;
 
-    @NotEmpty(message = "Role 등급이 비여있습니다!")
-    private Role role;
+    @NotNull(message = "Role 등급이 비여있습니다!")
+    private Integer roleId;
 
     @Positive(message = "기수는 양수여야 합니다!")
     private Integer year;
 
+    @NotNull(message = "휴학 여부가 비여있습니다!")
+    private boolean leaveAbsence;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @NotNull(message = "생년 월일이 비여있습니다!")
+    private LocalDate dateOfBirth;
 
     public MemberAddRequestServiceDto toServiceDto(){
         return MemberAddRequestServiceDto.builder()
@@ -63,10 +66,12 @@ public class MemberAddRequestControllerDto {
                 .email(email)
                 .phoneNumber(phoneNumber)
                 .studentID(studentID)
-                .major(major)
-                .rank(rank)
-                .role(role)
+                .major(Major.builder().id(majorId).build())
+                .rank(Rank.builder().id(rankId).build())
+                .role(Role.builder().id(roleId).build())
                 .year(year)
+                .leaveAbsence(leaveAbsence)
+                .dateOfBirth(dateOfBirth)
                 .build();
     }
 }

@@ -1,7 +1,8 @@
 package com.jaramgroupware.mms.dto.timeTable.serviceDto;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.domain.event.Event;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import lombok.*;
 
@@ -12,15 +13,22 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class TimeTableUpdateRequestServiceDto {
 
     private String name;
-    private DefDateTime defDateTime;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
 
     public TimeTable toEntity(){
         return TimeTable.builder()
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .name(name)
-                .defDateTime(defDateTime)
                 .build();
+    }
+    @Override
+    public boolean equals(Object o){
+        return this.toString().equals(o.toString());
     }
 }

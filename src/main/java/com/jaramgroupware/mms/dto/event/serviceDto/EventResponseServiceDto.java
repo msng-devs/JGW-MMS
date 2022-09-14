@@ -1,21 +1,27 @@
 package com.jaramgroupware.mms.dto.event.serviceDto;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.event.Event;
 import com.jaramgroupware.mms.dto.event.controllerDto.EventResponseControllerDto;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @ToString
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class EventResponseServiceDto {
 
     private Long id;
     private String name;
     private String index;
-    private DefDateTime defDateTime;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
 
     public EventResponseControllerDto toControllerDto(){
 
@@ -23,8 +29,8 @@ public class EventResponseServiceDto {
                 .id(id)
                 .name(name)
                 .index(index)
-                .startDateTime(defDateTime.getCreatedDateTime())
-                .endDateTime(defDateTime.getModifiedDataTime())
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .build();
     }
 
@@ -32,7 +38,8 @@ public class EventResponseServiceDto {
         id = event.getId();
         name = event.getName();
         index = event.getIndex();
-        defDateTime = event.getDefDateTime();
+        startDateTime = event.getStartDateTime();
+        endDateTime = event.getEndDateTime();
     }
 
     public Event toEntity(){
@@ -40,8 +47,12 @@ public class EventResponseServiceDto {
                 .id(id)
                 .name(name)
                 .index(index)
-                .defDateTime(defDateTime)
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .build();
     }
-
+    @Override
+    public boolean equals(Object o){
+        return this.toString().equals(o.toString());
+    }
 }

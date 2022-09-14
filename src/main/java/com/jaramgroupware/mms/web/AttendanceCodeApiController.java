@@ -1,9 +1,16 @@
 package com.jaramgroupware.mms.web;
 
+import com.jaramgroupware.mms.domain.attendance.AttendanceID;
+import com.jaramgroupware.mms.domain.attendanceType.AttendanceType;
+import com.jaramgroupware.mms.domain.member.Member;
+import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceIdResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeAddRequestControllerDto;
+import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeIdResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeRegisterRequestControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.controllerDto.AttendanceCodeResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendanceCode.serviceDto.AttendanceCodeServiceDto;
+import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableIdResponseControllerDto;
+import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableResponseServiceDto;
 import com.jaramgroupware.mms.service.AttendanceCodeService;
 import com.jaramgroupware.mms.service.AttendanceService;
 import com.jaramgroupware.mms.service.AttendanceTypeService;
@@ -42,11 +49,9 @@ public class AttendanceCodeApiController {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @PostMapping
-    public ResponseEntity<String> createdAttendanceCode(
+    public ResponseEntity<AttendanceCodeIdResponseControllerDto> createdAttendanceCode(
             @RequestBody @Valid AttendanceCodeAddRequestControllerDto addRequestControllerDto,
             @RequestHeader("user_uid") String uid){
-
-        logger.info("UID = ({}) Start create Attendance Code for TimeTable ID = ({})",uid,addRequestControllerDto.getTimeTableId());
 
         //해당 ID의 Time table이 있는지 검증
         timeTableService.findById(addRequestControllerDto.getTimeTableId());
@@ -65,26 +70,20 @@ public class AttendanceCodeApiController {
                 .timeTableId(addRequestControllerDto.getTimeTableId())
                 .build());
 
-        logger.info("UID = ({}) Successfully create Attendance Code, target TimeTable ID = ({}) code = ({})",uid,addRequestControllerDto.getTimeTableId(),code);
-
-        return new ResponseEntity<String>(code, HttpStatus.OK);
+        return ResponseEntity.ok(new AttendanceCodeIdResponseControllerDto(code));
     }
 
     @DeleteMapping("/{timeTableId}")
-    public ResponseEntity<Long> revokeAttendanceCode(
+    public ResponseEntity<TimeTableIdResponseControllerDto> revokeAttendanceCode(
             @PathVariable Long timeTableId,
             @RequestHeader("user_uid") String uid){
-
-        logger.info("UID = ({}), timeTableId = ({}) Start revoke code",uid,timeTableId);
 
         //해당 키가 존재하는지 확인
         if(attendanceCodeService.validationKey(timeTableId)) throw new CustomException(ErrorCode.INVALID_TIMETABLE_ID);
 
         attendanceCodeService.revokeCode(timeTableId);
 
-        logger.info("UID = ({}), timeTableId = ({}) Successfully revoke Attendance Code",uid,timeTableId);
-
-        return new ResponseEntity<Long>(timeTableId, HttpStatus.OK);
+        return ResponseEntity.ok(new TimeTableIdResponseControllerDto(timeTableId));
     }
 
     @GetMapping("/{timeTableId}")
@@ -92,33 +91,28 @@ public class AttendanceCodeApiController {
             @PathVariable Long timeTableId,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}), code = ({}) Find code's information",uid,timeTableId);
-
         AttendanceCodeResponseControllerDto result = attendanceCodeService.findKey(timeTableId).toControllerDto();
 
-        logger.info("UID = ({}), timeTableId = ({}) Get information, AttendanceCode = ({})",uid,timeTableId,result.toString());
-
-        return new ResponseEntity<AttendanceCodeResponseControllerDto>(result,HttpStatus.OK);
+        return ResponseEntity.ok(result);
     }
     @PostMapping("/register")
-    public ResponseEntity<Long> registerAttendanceCode(
+    public ResponseEntity<AttendanceIdResponseControllerDto> registerAttendanceCode(
             @RequestBody @Valid AttendanceCodeRegisterRequestControllerDto attendanceCodeRegisterRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try add Attendance Code. info = ({})",uid,attendanceCodeRegisterRequestControllerDto.toString());
+        TimeTableResponseServiceDto targetTimeTable = timeTableService.findById(attendanceCodeRegisterRequestControllerDto.getTimeTableID());
 
-        //코드 검증하기
         if(!attendanceCodeService.findKey
-                (attendanceCodeRegisterRequestControllerDto.getTimeTable().getId()).getCode()
+                (targetTimeTable.toEntity().getId()).getCode()
                 .equals(attendanceCodeRegisterRequestControllerDto.getCode())) throw new CustomException(ErrorCode.ATTENDANCE_CODE_NOT_VALID);
 
         //검증이 완료되었다면, 해당 코드 등록
         //TODO 하드코딩 고치기
-        Long id = attendanceService.add(
-                attendanceCodeRegisterRequestControllerDto.toAttendanceServiceDto(
-                        attendanceTypeService.findById(1).toEntity()
-                )
+        AttendanceType registerType = attendanceTypeService.findById(1).toEntity();
+        AttendanceID id = attendanceService.add(
+                attendanceCodeRegisterRequestControllerDto.toAttendanceServiceDto(registerType,targetTimeTable.toEntity(), Member.builder().id(uid).build()),
+                "system"
         );
-        return new ResponseEntity<Long>(id,HttpStatus.OK);
+        return ResponseEntity.ok(new AttendanceIdResponseControllerDto(id.getTimeTable().getId(),id.getMember().getId()));
     }
 }

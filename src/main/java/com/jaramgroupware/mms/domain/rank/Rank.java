@@ -1,5 +1,7 @@
 package com.jaramgroupware.mms.domain.rank;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.*;
 
 import javax.persistence.*;
@@ -11,6 +13,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @Builder
 @Entity(name = "RANK")
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class Rank {
 
     @Id
@@ -20,6 +23,7 @@ public class Rank {
 
     @Column(name = "RANK_NM",nullable = false,unique = true,length = 45)
     private String name;
+
 
 
 }

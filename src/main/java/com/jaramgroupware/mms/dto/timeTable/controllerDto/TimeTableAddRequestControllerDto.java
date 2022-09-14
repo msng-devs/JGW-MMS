@@ -2,9 +2,8 @@ package com.jaramgroupware.mms.dto.timeTable.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.event.Event;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventAddRequestServiceDto;
 import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableAddRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
 import lombok.*;
@@ -30,8 +29,8 @@ public class TimeTableAddRequestControllerDto {
     private String name;
 
     @NotNull(message = "이벤트는 비워져 있을 수 없습니다!")
-    @Positive(message = "event id가 잘못되었습니다!")
-    private Long EventId;
+    @Positive(message = "이벤트의 형식이 잘못되었습니다!")
+    private Long eventID;
 
 
     @NotNull(message = "startTime 은 반드시 입력해야 합니다!")
@@ -48,10 +47,8 @@ public class TimeTableAddRequestControllerDto {
         return TimeTableAddRequestServiceDto.builder()
                 .name(name)
                 .event(event)
-                .defDateTime(DefDateTime.builder()
-                        .createdDateTime(startDateTime)
-                        .modifiedDataTime(endDateTime)
-                        .build())
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .build();
     }
 }

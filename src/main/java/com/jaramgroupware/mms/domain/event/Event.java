@@ -1,13 +1,11 @@
 package com.jaramgroupware.mms.domain.event;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.domain.major.Major;
-import com.jaramgroupware.mms.domain.rank.Rank;
-import com.jaramgroupware.mms.domain.role.Role;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import lombok.*;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
 import java.time.LocalDateTime;
 
 @Getter
@@ -16,8 +14,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@AttributeOverrides({
+        @AttributeOverride(name = "createdDateTime",column = @Column(name = "EVENT_CREATED_DTTM")),
+        @AttributeOverride(name = "modifiedDateTime",column = @Column(name = "EVENT_MODIFIED_DTTM")),
+        @AttributeOverride(name = "createBy",column = @Column(name = "EVENT_CREATED_BY",length = 30)),
+        @AttributeOverride(name = "modifiedBy",column = @Column(name = "EVENT_MODIFIED_BY",length = 30)),
+})
 @Entity(name = "EVENT")
-public class Event {
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+public class Event extends BaseEntity {
 
     @Id
     @Column(name = "EVENT_PK")
@@ -25,23 +30,24 @@ public class Event {
     private Long id;
 
 
-    @Column(name = "EVENT_NM",nullable = false,length =50)
+    @Column(name = "EVENT_NM",nullable = false,length = 50)
     private String name;
 
     @Column(name = "EVENT_INDEX")
     private String index;
 
+    @Column(name = "EVENT_START_DTTM")
+    private LocalDateTime startDateTime;
 
-    @Embedded
-    @AttributeOverride(name = "createdDateTime",column = @Column(name = "EVENT_START_DTTM"))
-    @AttributeOverride(name = "modifiedDataTime",column = @Column(name = "EVENT_END_DTTM"))
-    private DefDateTime defDateTime;
+    @Column(name = "EVENT_END_DTTM")
+    private LocalDateTime endDateTime;
 
-    public void update(Event newEvent){
+    public void update(Event newEvent,String who){
         name = newEvent.getName();
         index = newEvent.getIndex();
-        defDateTime = newEvent.getDefDateTime();
+        modifiedBy = who;
     }
+
 
 }
 

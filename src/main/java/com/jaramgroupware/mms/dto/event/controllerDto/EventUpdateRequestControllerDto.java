@@ -2,15 +2,10 @@ package com.jaramgroupware.mms.dto.event.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventAddRequestServiceDto;
 import com.jaramgroupware.mms.dto.event.serviceDto.EventUpdateRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
-import com.jaramgroupware.mms.utils.validation.DateTimeValidation;
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
 
-import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;

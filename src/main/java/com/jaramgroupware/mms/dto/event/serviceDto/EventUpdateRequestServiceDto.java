@@ -1,6 +1,8 @@
 package com.jaramgroupware.mms.dto.event.serviceDto;
 
-import com.jaramgroupware.mms.domain.DefDateTime;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.event.Event;
 import lombok.*;
 
@@ -10,7 +12,9 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 @Builder
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class EventUpdateRequestServiceDto {
 
     private String name;
@@ -22,10 +26,8 @@ public class EventUpdateRequestServiceDto {
         return Event.builder()
                 .name(name)
                 .index(index)
-                .defDateTime(DefDateTime.builder()
-                        .createdDateTime(startDateTime)
-                        .modifiedDataTime(endDateTime)
-                        .build())
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .build();
     }
 }

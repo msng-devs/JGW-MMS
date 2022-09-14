@@ -1,6 +1,7 @@
 package com.jaramgroupware.mms.dto.attendanceType.serviceDto;
 
 import com.jaramgroupware.mms.domain.attendanceType.AttendanceType;
+import com.jaramgroupware.mms.dto.attendanceType.controllerDto.AttendanceTypeResponseControllerDto;
 import lombok.*;
 
 @ToString
@@ -24,5 +25,15 @@ public class AttendanceTypeResponseServiceDto {
                 .name(name)
                 .build();
     }
+    @Override
+    public boolean equals(Object o){
+        return this.toString().equals(o.toString());
+    }
 
+    public AttendanceTypeResponseControllerDto toControllerDto() {
+        return AttendanceTypeResponseControllerDto.builder()
+                .id(id)
+                .name(name)
+                .build();
+    }
 }

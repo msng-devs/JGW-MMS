@@ -7,6 +7,7 @@ import lombok.*;
 @ToString
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @Data
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)

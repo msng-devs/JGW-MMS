@@ -1,5 +1,6 @@
 package com.jaramgroupware.mms.service;
 
+import com.jaramgroupware.mms.domain.attendance.Attendance;
 import com.jaramgroupware.mms.domain.event.Event;
 import com.jaramgroupware.mms.domain.event.EventRepository;
 import com.jaramgroupware.mms.dto.event.controllerDto.EventResponseControllerDto;
@@ -10,6 +11,8 @@ import com.jaramgroupware.mms.utils.exception.CustomException;
 import com.jaramgroupware.mms.utils.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +28,11 @@ public class EventService {
     private final EventRepository eventRepository;
 
     @Transactional
-    public Long add(EventAddRequestServiceDto eventAddRequestServiceDto){
-        return eventRepository.save(eventAddRequestServiceDto.toEntity()).getId();
+    public Long add(EventAddRequestServiceDto eventAddRequestServiceDto,String who){
+        Event targetEvent = eventAddRequestServiceDto.toEntity();
+        targetEvent.setCreateBy(who);
+        targetEvent.setModifiedBy(who);
+        return eventRepository.save(targetEvent).getId();
     }
 
     @Transactional
@@ -46,12 +52,7 @@ public class EventService {
         Event targetEvent = eventRepository.findById(id)
                 .orElseThrow(()->new CustomException(ErrorCode.INVALID_EVENT_ID));
 
-        return EventResponseServiceDto.builder()
-                .id(targetEvent.getId())
-                .name(targetEvent.getName())
-                .index(targetEvent.getIndex())
-                .defDateTime(targetEvent.getDefDateTime())
-                .build();
+        return new EventResponseServiceDto(targetEvent);
     }
 
     @Transactional(readOnly = true)
@@ -63,22 +64,24 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<EventResponseServiceDto> findAll(Specification<Event> specification, Pageable pageable){
+
+        return eventRepository.findAll(specification,pageable)
+                .stream().map(EventResponseServiceDto::new)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
-    public EventResponseServiceDto update(Long id, EventUpdateRequestServiceDto updateRequestServiceDto){
+    public EventResponseServiceDto update(Long id, EventUpdateRequestServiceDto updateRequestServiceDto,String who){
 
         Event targetEvent = eventRepository.findById(id)
                 .orElseThrow(()->new CustomException(ErrorCode.INVALID_EVENT_ID));
 
-        targetEvent.update(updateRequestServiceDto.toEntity());
+        targetEvent.update(updateRequestServiceDto.toEntity(),who);
 
         eventRepository.save(targetEvent);
 
-        return EventResponseServiceDto.builder()
-                .id(targetEvent.getId())
-                .id(targetEvent.getId())
-                .name(targetEvent.getName())
-                .index(targetEvent.getIndex())
-                .defDateTime(targetEvent.getDefDateTime())
-                .build();
+        return new EventResponseServiceDto(targetEvent);
     }
 }

@@ -36,5 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 
-application.properties
+application-dev.properties
+application-product.properties
 logback-product.xml
+logback-dev.xml
+*.sql

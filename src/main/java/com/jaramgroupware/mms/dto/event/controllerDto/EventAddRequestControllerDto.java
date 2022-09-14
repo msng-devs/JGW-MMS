@@ -2,18 +2,12 @@ package com.jaramgroupware.mms.dto.event.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
 import com.jaramgroupware.mms.dto.event.serviceDto.EventAddRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
-import com.jaramgroupware.mms.utils.validation.DateTimeValidation;
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @ToString
 @Getter

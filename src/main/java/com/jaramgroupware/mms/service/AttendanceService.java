@@ -1,21 +1,33 @@
 package com.jaramgroupware.mms.service;
 
-import com.jaramgroupware.mms.domain.attendance.Attendance;
-import com.jaramgroupware.mms.domain.attendance.AttendanceRepository;
-import com.jaramgroupware.mms.domain.event.Event;
-import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceUpdateRequestControllerDto;
+import com.jaramgroupware.mms.domain.attendance.*;
+import com.jaramgroupware.mms.domain.member.Member;
+import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceAddServiceDto;
+import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceBulkUpdateRequestServiceDto;
 import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceResponseServiceDto;
 import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceUpdateRequestServiceDto;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventResponseServiceDto;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventUpdateRequestServiceDto;
+import com.jaramgroupware.mms.dto.member.serviceDto.MemberAddRequestServiceDto;
+import com.jaramgroupware.mms.dto.member.serviceDto.MemberBulkUpdateRequestServiceDto;
 import com.jaramgroupware.mms.utils.exception.CustomException;
 import com.jaramgroupware.mms.utils.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -23,14 +35,45 @@ import java.util.stream.Collectors;
 public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final int batchSize = 100;
 
     @Transactional
-    public Long add(AttendanceAddServiceDto attendanceAddServiceDto){
-        return attendanceRepository.save(attendanceAddServiceDto.toEntity()).getId();
+    public AttendanceID add(AttendanceAddServiceDto attendanceAddServiceDto,String who){
+        Attendance targetAttendance = attendanceAddServiceDto.toEntity();
+        targetAttendance.setCreateBy(who);
+        targetAttendance.setModifiedBy(who);
+
+        return attendanceRepository.save(targetAttendance).getId();
+    }
+
+    @Transactional
+    public void add(List<AttendanceAddServiceDto> attendanceAddServiceDto, String who) {
+        List<AttendanceAddServiceDto> batchDto = new ArrayList<>();
+        for (AttendanceAddServiceDto dto:attendanceAddServiceDto) {
+            batchDto.add(dto);
+            if(batchDto.size() == batchSize){
+                batchAdd(batchDto,who);
+            }
+        }
+        if(!batchDto.isEmpty()) {
+            batchAdd(batchDto,who);
+        }
+
+    }
+
+    public void batchAdd(List<AttendanceAddServiceDto> batchDto,String who){
+        List<Attendance> targetAttendances = batchDto.stream()
+                .map(AttendanceAddServiceDto::toEntity)
+                .collect(Collectors.toList());
+
+        attendanceRepository.bulkInsert(targetAttendances,who);
+        targetAttendances.clear();
+        batchDto.clear();
     }
 
     @Transactional(readOnly = true)
-    public AttendanceResponseServiceDto findById(Long id){
+    public AttendanceResponseServiceDto findById(AttendanceID id){
         Attendance targetAttendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_ATTENDANCE_ID));
         return new AttendanceResponseServiceDto(targetAttendance);
@@ -46,8 +89,24 @@ public class AttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public Long delete(Long id){
-        Attendance targetAttendance = attendanceRepository.findAttendanceById(id)
+    public List<AttendanceResponseServiceDto> findAll(Specification<Attendance> specification){
+        return attendanceRepository.findAll(specification)
+                .stream()
+                .map(AttendanceResponseServiceDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceResponseServiceDto> findAll(Specification<Attendance> specification, Pageable pageable){
+        return attendanceRepository.findAll(specification,pageable)
+                .stream()
+                .map(AttendanceResponseServiceDto::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AttendanceID delete(AttendanceID id){
+        Attendance targetAttendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_ATTENDANCE_ID));
 
         attendanceRepository.delete(targetAttendance);
@@ -56,16 +115,84 @@ public class AttendanceService {
     }
 
     @Transactional
-    public AttendanceResponseServiceDto update(Long id, AttendanceUpdateRequestServiceDto attendanceUpdateRequestServiceDto){
+    public void delete(Set<AttendanceID> ids){
+        List<AttendanceID> batchDto = new ArrayList<>();
+        for (AttendanceID dto:ids) {
+            batchDto.add(dto);
+            if(batchDto.size() == batchSize){
+                batchDelete(batchDto);
+            }
+        }
+        if(!batchDto.isEmpty()) {
+            batchDelete(batchDto);
+        }
+    }
+
+    public void batchDelete(List<AttendanceID> batchDto){
+        List<Member> members = new ArrayList<>();
+        List<TimeTable> timeTables = new ArrayList<>();
+
+        for (AttendanceID dto:batchDto) {
+            members.add(dto.getMember());
+            timeTables.add(dto.getTimeTable());
+        }
+
+        if(attendanceRepository.findAttendancesIn(timeTables,members).size() != batchDto.size())
+            throw new CustomException(ErrorCode.INVALID_ATTENDANCE_ID);
+        attendanceRepository.deleteAllByIdInQuery(timeTables,members);
+
+        members.clear();
+        timeTables.clear();
+        batchDto.clear();
+    }
+
+    @Transactional
+    public AttendanceResponseServiceDto update(AttendanceID id, AttendanceUpdateRequestServiceDto attendanceUpdateRequestServiceDto,String who){
 
         Attendance targetAttendance = attendanceRepository.findById(id)
                 .orElseThrow(()->new CustomException(ErrorCode.INVALID_ATTENDANCE_ID));
 
-        targetAttendance.update(attendanceUpdateRequestServiceDto.toEntity());
+        targetAttendance.update(attendanceUpdateRequestServiceDto.toEntity(),who);
 
         attendanceRepository.save(targetAttendance);
 
         return new AttendanceResponseServiceDto(targetAttendance);
     }
 
+    @Transactional
+    public void update(List<AttendanceBulkUpdateRequestServiceDto> updateDtos, String who){
+
+        List<AttendanceBulkUpdateRequestServiceDto> batchDto = new ArrayList<>();
+        for (AttendanceBulkUpdateRequestServiceDto dto:updateDtos) {
+            batchDto.add(dto);
+            if(batchDto.size() == batchSize){
+                batchUpdate(batchDto,who);
+            }
+        }
+        if(!batchDto.isEmpty()) {
+
+            batchUpdate(batchDto,who);
+        }
+    }
+
+    private void batchUpdate(List<AttendanceBulkUpdateRequestServiceDto> batchDto,String who){
+        List<Member> members = new ArrayList<>();
+        List<TimeTable> timeTables = new ArrayList<>();
+
+        for (AttendanceBulkUpdateRequestServiceDto dto:batchDto) {
+            members.add(dto.getMember());
+            timeTables.add(dto.getTimeTable());
+        }
+
+        if(attendanceRepository.findAttendancesIn(timeTables,members).size() != batchDto.size())
+            throw new CustomException(ErrorCode.INVALID_ATTENDANCE_ID);
+
+        attendanceRepository.bulkUpdate(batchDto.stream()
+                .map(AttendanceBulkUpdateRequestServiceDto::toEntity)
+                .collect(Collectors.toList()), who);
+
+        members.clear();
+        timeTables.clear();
+        batchDto.clear();
+    }
 }

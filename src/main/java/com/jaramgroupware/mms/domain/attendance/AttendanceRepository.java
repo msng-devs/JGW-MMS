@@ -1,13 +1,24 @@
 package com.jaramgroupware.mms.domain.attendance;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.jaramgroupware.mms.domain.member.Member;
+import com.jaramgroupware.mms.domain.timeTable.TimeTable;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
-public interface AttendanceRepository extends JpaRepository<Attendance,Long> {
-    Optional<Attendance> findAttendanceById(Long id);
+public interface AttendanceRepository extends JpaRepository<Attendance,AttendanceID>, JpaSpecificationExecutor<Attendance>, AttendanceCustomRepository{
+
+    @Query("SELECT a FROM ATTENDANCE a JOIN fetch a.timeTable JOIN fetch a.member WHERE (a.timeTable IN :timeTables) AND (a.member IN :members)")
+    List<Attendance> findAttendancesIn(@Param("timeTables") List<TimeTable> timeTables, @Param("members") List<Member> members);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ATTENDANCE a WHERE (a.timeTable IN :timeTables) AND (a.member IN :members)")
+    void deleteAllByIdInQuery(@Param("timeTables") List<TimeTable> timeTables, @Param("members") List<Member> members);
+
     Optional<List<Attendance>> findAllBy();
 }

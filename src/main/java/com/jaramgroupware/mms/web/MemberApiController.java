@@ -1,100 +1,189 @@
 package com.jaramgroupware.mms.web;
 
 
-import com.jaramgroupware.mms.dto.member.controllerDto.MemberAddRequestControllerDto;
-import com.jaramgroupware.mms.dto.member.controllerDto.MemberResponseControllerDto;
-import com.jaramgroupware.mms.dto.member.controllerDto.MemberUpdateRequestControllerDto;
+import com.fasterxml.jackson.databind.ser.std.StdKeySerializers;
+import com.jaramgroupware.mms.domain.attendance.AttendanceSpecification;
+import com.jaramgroupware.mms.domain.config.Config;
+import com.jaramgroupware.mms.domain.member.MemberSpecification;
+import com.jaramgroupware.mms.domain.member.MemberSpecificationBuilder;
+import com.jaramgroupware.mms.domain.rank.Rank;
+import com.jaramgroupware.mms.domain.role.Role;
+import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceResponseControllerDto;
+import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceResponseServiceDto;
+import com.jaramgroupware.mms.dto.general.controllerDto.MessageDto;
+import com.jaramgroupware.mms.dto.member.controllerDto.*;
 import com.jaramgroupware.mms.dto.member.serviceDto.MemberResponseServiceDto;
-import com.jaramgroupware.mms.service.MemberService;
+import com.jaramgroupware.mms.service.*;
+import com.jaramgroupware.mms.utils.exception.CustomException;
+import com.jaramgroupware.mms.utils.exception.ErrorCode;
+import com.jaramgroupware.mms.utils.validation.PageableValid;
+import com.jaramgroupware.mms.utils.validation.member.BulkAddMemberValid;
+import com.jaramgroupware.mms.utils.validation.member.BulkUpdateMemberValid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @RestController
+@Validated
 @RequestMapping("/api/v1/member")
 public class MemberApiController {
 
     private final MemberService memberService;
+    private final MajorService majorService;
+    private final RankService rankService;
+    private final RoleService roleService;
+    private final ConfigService configService;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final MemberSpecificationBuilder memberSpecificationBuilder;
 
-    @PostMapping
-    public ResponseEntity<String> addAttendance(
-            @RequestBody @Valid MemberAddRequestControllerDto memberAddRequestControllerDto,
+    private final Role defaultMemberRole = Role.builder().id(1).build();
+    private final Role defaultNewMemberRole = Role.builder().id(0).build();
+
+    private final Rank defaultRank = Rank.builder().id(1).build();
+    private final Rank defaultNewRank = Rank.builder().id(2).build();
+
+
+    @PostMapping("/register")
+    public ResponseEntity<MemberIdResponseControllerDto> registerMember(
+            @RequestParam(defaultValue = "true",name = "isNew") Boolean isNew,
+            @RequestBody @Valid MemberRegisterRequestControllerDto memberRegisterRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Request Add new member, add = ({})",uid,memberAddRequestControllerDto.toString());
+        String id;
+        if(isNew){
+            id = memberService.add(memberRegisterRequestControllerDto.toServiceDto(defaultNewRank,defaultNewMemberRole),"system");
+        } else{
+            id = memberService.add(memberRegisterRequestControllerDto.toServiceDto(defaultRank,defaultMemberRole),"system");
+        }
 
-        String id = memberService.add(memberAddRequestControllerDto.toServiceDto());
-
-        logger.info("UID = ({}) Successfully Add new member, memberId = ({})",uid,id);
-
-        return new ResponseEntity<String>(id, HttpStatus.OK);
+        return ResponseEntity.ok(new MemberIdResponseControllerDto(id));
     }
 
+    @PostMapping
+    public ResponseEntity<MessageDto> addMember(
+            @RequestBody @NotNull @BulkAddMemberValid Set<@Valid MemberAddRequestControllerDto> memberAddRequestControllerDto,
+            @RequestHeader("user_uid") String uid){
+
+        memberService.add(
+                memberAddRequestControllerDto.stream()
+                        .map(MemberAddRequestControllerDto::toServiceDto)
+                        .collect(Collectors.toList()), uid);
+
+        return ResponseEntity.ok(new MessageDto("총 ("+memberAddRequestControllerDto.size()+")개의 Member를 성공적으로 추가했습니다!"));
+    }
     @GetMapping("{memberId}")
-    public ResponseEntity<MemberResponseControllerDto> getAttendanceById(
+    public ResponseEntity<MemberResponseControllerDto> getMemberById(
             @PathVariable String memberId,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try find member's info, memberID = ({})",uid,memberId);
-
         MemberResponseControllerDto result = memberService.findById(memberId).toControllerDto();
 
-        logger.info("UID = ({}) Successfully find member, member = ({})",uid,result.toString());
-
-        return new ResponseEntity<MemberResponseControllerDto>(result, HttpStatus.OK);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping
-    public ResponseEntity<List<MemberResponseControllerDto>> getAttendanceAll(
+    public ResponseEntity<List<MemberResponseControllerDto>> getMemberAll(
+            @PageableDefault(page = 0,size = 1000,sort = "id",direction = Sort.Direction.DESC)
+            @PageableValid(sortKeys =
+                    {"id","email","name","phoneNumber","studentID","major","rank","role","year","leaveAbsence","dateOfBirth","createdDateTime","modifiedDateTime","createBy","modifiedBy"}
+            ) Pageable pageable,
+            @RequestParam(required = false) MultiValueMap<String, String> queryParam,
+            @RequestParam(required = false,defaultValue = "false") Boolean includeGuest,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try find All Member's info",uid);
+        logger.debug("includeGuest {}", includeGuest);
 
-        List<MemberResponseControllerDto> results = memberService.findAll()
-                .stream().map(MemberResponseServiceDto::toControllerDto)
-                .collect(Collectors.toList());
+        //limit 확인 및 추가
+        int limit = queryParam.containsKey("limit") ? Integer.parseInt(Objects.requireNonNull(queryParam.getFirst("limit"))) : -1;
 
-        logger.info("UID = ({}) Successfully find All Member",uid);
+        //Specification 등록
+        MemberSpecification spec = memberSpecificationBuilder.toSpec(queryParam);
 
-        return new ResponseEntity<List<MemberResponseControllerDto>>(results, HttpStatus.OK);
+        List<MemberResponseControllerDto> results;
+
+        //limit true
+        if(limit > 0){
+            results = memberService.findAll(spec, PageRequest.of(0, limit, pageable.getSort()))
+                    .stream()
+                    .map(MemberResponseServiceDto::toControllerDto)
+                    .collect(Collectors.toList());
+        }
+
+        else{
+            results = memberService.findAll(spec,pageable)
+                    .stream()
+                    .map(MemberResponseServiceDto::toControllerDto)
+                    .collect(Collectors.toList());
+        }
+
+        return ResponseEntity.ok(results);
     }
 
 
     @DeleteMapping("{memberID}")
-    public ResponseEntity<String> delAttendance(
+    public ResponseEntity<MemberIdResponseControllerDto> delMember(
             @PathVariable String memberID,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try delete Member, Member = ({})",uid,memberID);
-
         memberService.delete(memberID);
 
-        logger.info("UID = ({}) Successfully delete Member, Member = ({})",uid,memberID);
+        return ResponseEntity.ok(new MemberIdResponseControllerDto(memberID));
+    }
 
-        return new ResponseEntity<String>(memberID, HttpStatus.OK);
+    @DeleteMapping
+    public ResponseEntity<MessageDto> bulkDelMember(
+            @RequestBody @Valid MemberBulkDeleteRequestControllerDto dto,
+            @RequestHeader("user_uid") String uid){
+
+        memberService.delete(dto.getMemberIDs());
+
+        return ResponseEntity.ok(new MessageDto("총 ("+dto.getMemberIDs().size()+")개의 Member를 성공적으로 삭제했습니다!"));
     }
 
     @PutMapping("{memberID}")
-    public ResponseEntity<MemberResponseControllerDto> updateAttendance(
+    public ResponseEntity<MemberResponseControllerDto> updateMember(
             @PathVariable String memberID,
             @RequestBody @Valid MemberUpdateRequestControllerDto memberUpdateRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        logger.info("UID = ({}) Try update Member, MemberId = ({})",uid,memberID);
+        MemberResponseControllerDto result = memberService.update(memberID,
+                memberUpdateRequestControllerDto.toServiceDto(
+                        majorService.findById(memberUpdateRequestControllerDto.getMajorId()).toEntity(),
+                        rankService.findById(memberUpdateRequestControllerDto.getRankId()).toEntity(),
+                        roleService.findById(memberUpdateRequestControllerDto.getRoleId()).toEntity()
+                ),uid).toControllerDto();
 
-        MemberResponseControllerDto result = memberService.update(memberID,memberUpdateRequestControllerDto.toServiceDto()).toControllerDto();
+        return ResponseEntity.ok(result);
+    }
 
-        logger.info("UID = ({}) Successfully update Member, Member = ({})",uid,result.toString());
+    @PutMapping
+    public ResponseEntity<MessageDto> bulkUpdateMember(
+            @RequestBody @Valid @BulkUpdateMemberValid Set<MemberBulkUpdateRequestControllerDto> dtos,
+            @RequestHeader("user_uid") String uid){
 
-        return new ResponseEntity<MemberResponseControllerDto>(result, HttpStatus.OK);
+        memberService.update(dtos.stream()
+                                .map(MemberBulkUpdateRequestControllerDto::toServiceDto)
+                                .collect(Collectors.toList()), uid);
+
+        return ResponseEntity.ok(new MessageDto("총 ("+dtos.size()+")개의 Member를 성공적으로 업데이트했습니다!"));
     }
 }

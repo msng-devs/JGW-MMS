@@ -2,7 +2,6 @@ package com.jaramgroupware.mms.dto.event.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
 import lombok.*;
 
 import java.time.LocalDateTime;

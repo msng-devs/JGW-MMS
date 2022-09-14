@@ -1,5 +1,7 @@
 package com.jaramgroupware.mms.domain.major;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.*;
 
 import javax.persistence.*;
@@ -11,6 +13,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @Builder
 @Entity(name = "MAJOR")
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class Major {
 
     @Id

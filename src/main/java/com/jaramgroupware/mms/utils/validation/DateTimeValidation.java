@@ -20,7 +20,6 @@ public class DateTimeValidation implements
         ConstraintValidator<DateTimeCheck, Object> {
 
     private final DateTimeCompare dateTimeCompare;
-    private static final SpelExpressionParser PARSER = new SpelExpressionParser();
     private String startDateTime;
     private String endDateTime;
 

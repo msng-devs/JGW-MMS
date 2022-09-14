@@ -30,4 +30,5 @@ public class Error {
     @Column(name = "ERROR_INDEX")
     private String index;
 
+
 }

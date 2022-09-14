@@ -2,8 +2,7 @@ package com.jaramgroupware.mms.dto.timeTable.controllerDto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.jaramgroupware.mms.domain.DefDateTime;
-import com.jaramgroupware.mms.dto.event.serviceDto.EventUpdateRequestServiceDto;
+import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.dto.timeTable.serviceDto.TimeTableUpdateRequestServiceDto;
 import com.jaramgroupware.mms.utils.validation.DateTimeCheck;
 import lombok.*;
@@ -40,10 +39,8 @@ public class TimeTableUpdateRequestControllerDto {
     public TimeTableUpdateRequestServiceDto toServiceDto(){
         return TimeTableUpdateRequestServiceDto.builder()
                 .name(name)
-                .defDateTime(DefDateTime.builder()
-                        .createdDateTime(startDateTime)
-                        .modifiedDataTime(endDateTime)
-                        .build())
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .build();
     }
 }
