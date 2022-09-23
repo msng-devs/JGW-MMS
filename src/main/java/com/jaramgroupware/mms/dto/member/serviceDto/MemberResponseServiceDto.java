@@ -1,11 +1,10 @@
 package com.jaramgroupware.mms.dto.member.serviceDto;
 
-import com.jaramgroupware.mms.domain.BaseEntity;
 import com.jaramgroupware.mms.domain.major.Major;
 import com.jaramgroupware.mms.domain.member.Member;
 import com.jaramgroupware.mms.domain.rank.Rank;
 import com.jaramgroupware.mms.domain.role.Role;
-import com.jaramgroupware.mms.dto.member.controllerDto.MemberResponseControllerDto;
+import com.jaramgroupware.mms.dto.member.controllerDto.MemberFullResponseControllerDto;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -82,8 +81,8 @@ public class MemberResponseServiceDto {
                 .dateOfBirth(dateofbirth)
                 .build();
     }
-    public MemberResponseControllerDto toControllerDto(){
-        return MemberResponseControllerDto
+    public MemberFullResponseControllerDto toControllerDto(){
+        return MemberFullResponseControllerDto
                 .builder()
                 .id(id)
                 .email(email)

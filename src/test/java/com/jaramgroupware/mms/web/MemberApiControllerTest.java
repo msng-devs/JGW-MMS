@@ -199,9 +199,8 @@ class MemberApiControllerTest {
                 .andExpect(jsonPath("$.message").value("총 (1)개의 Member를 성공적으로 추가했습니다!"));
         verify(memberService).add(anyList(),anyString());
     }
-
     @Test
-    void getMemberById() throws Exception {
+    void getMemberByIdWithAdminSelf() throws Exception {
         //given
         String memberID = testUtils.getTestMember().getId();
 
@@ -214,6 +213,7 @@ class MemberApiControllerTest {
         ResultActions result = mvc.perform(
                 RestDocumentationRequestBuilders.get("/api/v1/member/{memberID}",memberID)
                         .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",4)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -244,6 +244,99 @@ class MemberApiControllerTest {
         //then
         result.andExpect(status().isOk())
                 .andExpect(content().json(objectMapper.writeValueAsString(targetMemberDto.toControllerDto())));
+        verify(memberService).findById(memberID);
+    }
+
+    @Test
+    void getMemberByIdWithAdminNotSelf() throws Exception {
+        //given
+        String memberID = testUtils.getTestMember().getId();
+
+        MemberResponseServiceDto targetMemberDto = new MemberResponseServiceDto(testUtils.getTestMember());
+
+        doReturn(targetMemberDto).when(memberService).findById(memberID);
+
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/member/{memberID}",memberID)
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",4)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(targetMemberDto.toControllerDto())));
+        verify(memberService).findById(memberID);
+    }
+
+    @Test
+    void getMemberByIdWithNoAdminForSelf() throws Exception {
+        //given
+        String memberID = testUtils.getTestMember().getId();
+
+        MemberResponseServiceDto targetMemberDto = new MemberResponseServiceDto(testUtils.getTestMember());
+
+        doReturn(targetMemberDto).when(memberService).findById(memberID);
+
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/member/{memberID}",memberID)
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",3)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(targetMemberDto.toControllerDto())));
+        verify(memberService).findById(memberID);
+    }
+
+    //TODO Docs에 추가
+    @Test
+    void getMemberByIdWithNoAdminReturnTiny() throws Exception {
+        //given
+        String memberID = testUtils.getTestUid();
+
+        MemberResponseServiceDto targetMemberDto = new MemberResponseServiceDto(testUtils.getTestMember());
+
+        doReturn(targetMemberDto).when(memberService).findById(memberID);
+
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/member/{memberID}",memberID)
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",3)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andDo(document("member-get-single-tiny",
+                        preprocessRequest(prettyPrint()),
+                        preprocessResponse(prettyPrint()),
+                        pathParameters(
+                                parameterWithName("memberID").description("대상 Member의 uid(firebase uid)")
+                        ),
+                        responseFields(
+                                fieldWithPath("email").description("대상 member의 email").attributes(field("constraints", "email 양식을 지켜야함. regrex : [0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]$")),
+                                fieldWithPath("name").description("대상 member의 name(실명)"),
+                                fieldWithPath("ent_student_id").description("대상 member의 student id(학번)").attributes(field("constraints", "10자리의 student id")),
+                                fieldWithPath("year").description("대상 member의 기수"),
+                                fieldWithPath("leave_absence").description("대상 member의 휴학 여부").attributes(field("constraints", "true : 휴학 , false : 휴학 아님")),
+                                fieldWithPath("major_id").description("대상 member의 major(object)의 ID"),
+                                fieldWithPath("major_name").description("대상 member의 major(object)의 이름"),
+                                fieldWithPath("rank_id").description("대상 member의 rank(object)의 ID"),
+                                fieldWithPath("rank_name").description("대상 member의 rank(object)의 이름"))
+                ));
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(targetMemberDto.toControllerDto().toTiny())));
         verify(memberService).findById(memberID);
     }
 

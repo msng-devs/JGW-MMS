@@ -33,7 +33,10 @@ import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -126,7 +129,7 @@ class PenaltyApiControllerTest {
     }
 
     @Test
-    void getPenaltyById() throws Exception {
+    void getPenaltyByIdWithAdmin() throws Exception {
         //given
         Long penaltyID = 1L;
 
@@ -139,6 +142,7 @@ class PenaltyApiControllerTest {
         ResultActions result = mvc.perform(
                 RestDocumentationRequestBuilders.get("/api/v1/penalty/{penaltyID}",penaltyID)
                         .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",4)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -167,8 +171,58 @@ class PenaltyApiControllerTest {
         verify(penaltyService).findById(penaltyID);
     }
 
+
     @Test
-    void getPenaltyAll() throws Exception {
+    void getPenaltyByIdWithNoAdminSelf() throws Exception {
+        //given
+        Long penaltyID = 1L;
+
+        PenaltyResponseServiceDto penaltyResponseServiceDto = new PenaltyResponseServiceDto(testUtils.getTestPenalty());
+
+        doReturn(penaltyResponseServiceDto).when(penaltyService).findById(penaltyID);
+
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/penalty/{penaltyID}",penaltyID)
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",3)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(penaltyResponseServiceDto.toControllerDto())));
+        verify(penaltyService).findById(penaltyID);
+    }
+
+    @Test
+    void getPenaltyByIdWithNoAdminAuthError() throws Exception {
+        //given
+        Long penaltyID = 1L;
+
+        PenaltyResponseServiceDto penaltyResponseServiceDto = new PenaltyResponseServiceDto(testUtils.getTestPenalty());
+
+        doReturn(penaltyResponseServiceDto).when(penaltyService).findById(penaltyID);
+
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/penalty/{penaltyID}",penaltyID)
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",3)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isForbidden());
+        verify(penaltyService).findById(penaltyID);
+    }
+
+    @Test
+    void getPenaltyAllWithAdminNoSelf() throws Exception {
         //given
         List<PenaltyResponseServiceDto> targetPenaltyList = new ArrayList<PenaltyResponseServiceDto>();
 
@@ -184,6 +238,7 @@ class PenaltyApiControllerTest {
         ResultActions result = mvc.perform(
                 get("/api/v1/penalty/")
                         .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",4)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
@@ -212,7 +267,96 @@ class PenaltyApiControllerTest {
                                         .collect(Collectors.toList()))));
         verify(penaltyService).findAll(any(),any());
     }
+    @Test
+    void getPenaltyAllWithAdminSelf() throws Exception {
+        //given
+        List<PenaltyResponseServiceDto> targetPenaltyList = new ArrayList<PenaltyResponseServiceDto>();
 
+        PenaltyResponseServiceDto penaltyResponseServiceDto1 = new PenaltyResponseServiceDto(testUtils.getTestPenalty());
+        targetPenaltyList.add(penaltyResponseServiceDto1);
+
+        doReturn(targetPenaltyList).when(penaltyService).findAll(any(),any());
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+
+        queryParam.add("targetMember",penaltyResponseServiceDto1.getTargetMemberID());
+        //when
+        ResultActions result = mvc.perform(
+                get("/api/v1/penalty/")
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",4)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(
+                        objectMapper.writeValueAsString(
+                                targetPenaltyList.stream()
+                                        .map(PenaltyResponseServiceDto::toControllerDto)
+                                        .collect(Collectors.toList()))));
+        verify(penaltyService).findAll(any(),any());
+    }
+
+    @Test
+    void getPenaltyAllWithNoAdminSelf() throws Exception {
+        //given
+        List<PenaltyResponseServiceDto> targetPenaltyList = new ArrayList<PenaltyResponseServiceDto>();
+
+        PenaltyResponseServiceDto penaltyResponseServiceDto1 = new PenaltyResponseServiceDto(testUtils.getTestPenalty());
+        targetPenaltyList.add(penaltyResponseServiceDto1);
+
+
+        doReturn(targetPenaltyList).when(penaltyService).findAll(any(),any());
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+
+        queryParam.add("targetMember",penaltyResponseServiceDto1.getTargetMemberID());
+        //when
+        ResultActions result = mvc.perform(
+                get("/api/v1/penalty/")
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",3)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(
+                        objectMapper.writeValueAsString(
+                                targetPenaltyList.stream()
+                                        .map(PenaltyResponseServiceDto::toControllerDto)
+                                        .collect(Collectors.toList()))));
+        verify(penaltyService).findAll(any(),any());
+    }
+    @Test
+    void getPenaltyAllWithNoAdminWithAuthError() throws Exception {
+        //given
+        List<PenaltyResponseServiceDto> targetPenaltyList = new ArrayList<PenaltyResponseServiceDto>();
+
+        PenaltyResponseServiceDto penaltyResponseServiceDto1 = new PenaltyResponseServiceDto(testUtils.getTestPenalty());
+        targetPenaltyList.add(penaltyResponseServiceDto1);
+
+
+        doReturn(targetPenaltyList).when(penaltyService).findAll(any(),any());
+
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+        queryParam.add("targetMember",penaltyResponseServiceDto1.getTargetMemberID());
+        //when
+        ResultActions result = mvc.perform(
+                get("/api/v1/penalty/")
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",3)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isForbidden());
+    }
     @Test
     void delPenalty() throws Exception {
         //given

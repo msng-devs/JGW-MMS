@@ -35,6 +35,7 @@ public enum ErrorCode {
     ATTENDANCE_CODE_NOT_VALID(HttpStatus.FORBIDDEN,"ATTENDANCE_CODE_NOT_VALID","코드가 일치하지 않습니다!",10104),
     REGISTER_CODE_NOT_VALID(HttpStatus.FORBIDDEN,"REGISTER_CODE_NOT_VALID","회원가입 코드가 일치하지 않습니다!",10104),
     ALREADY_HAS_CODE(HttpStatus.BAD_REQUEST,"ALREADY_HAS_CODE","이미 코드를 가지고 있는 TimeTable입니다.",20106),
+    FORBIDDEN_ROLE(HttpStatus.FORBIDDEN,"FORBIDDEN_ROLE","접근 가능한 권한이 아닙니다.",20106),
     CANNOT_CREATE_KEY(HttpStatus.INTERNAL_SERVER_ERROR,"CANNOT_CREATE_KEY","키 생성에 실패했습니다! 다시 시도해 주세요!",30101),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"INTERNAL_SERVER_ERROR","알 수 없는 서버 에러입니다.",null);
 

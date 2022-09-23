@@ -1,21 +1,14 @@
 package com.jaramgroupware.mms.web;
 
 
-import com.fasterxml.jackson.databind.ser.std.StdKeySerializers;
-import com.jaramgroupware.mms.domain.attendance.AttendanceSpecification;
-import com.jaramgroupware.mms.domain.config.Config;
 import com.jaramgroupware.mms.domain.member.MemberSpecification;
 import com.jaramgroupware.mms.domain.member.MemberSpecificationBuilder;
 import com.jaramgroupware.mms.domain.rank.Rank;
 import com.jaramgroupware.mms.domain.role.Role;
-import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceResponseControllerDto;
-import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceResponseServiceDto;
 import com.jaramgroupware.mms.dto.general.controllerDto.MessageDto;
 import com.jaramgroupware.mms.dto.member.controllerDto.*;
 import com.jaramgroupware.mms.dto.member.serviceDto.MemberResponseServiceDto;
 import com.jaramgroupware.mms.service.*;
-import com.jaramgroupware.mms.utils.exception.CustomException;
-import com.jaramgroupware.mms.utils.exception.ErrorCode;
 import com.jaramgroupware.mms.utils.validation.PageableValid;
 import com.jaramgroupware.mms.utils.validation.member.BulkAddMemberValid;
 import com.jaramgroupware.mms.utils.validation.member.BulkUpdateMemberValid;
@@ -26,16 +19,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +50,8 @@ public class MemberApiController {
 
     private final Rank defaultRank = Rank.builder().id(1).build();
     private final Rank defaultNewRank = Rank.builder().id(2).build();
+
+    private final Role adminRole = Role.builder().id(4).build();
 
 
     @PostMapping("/register")
@@ -90,18 +82,21 @@ public class MemberApiController {
 
         return ResponseEntity.ok(new MessageDto("총 ("+memberAddRequestControllerDto.size()+")개의 Member를 성공적으로 추가했습니다!"));
     }
+    //TODO role 조회하여 admin 권한 이상이면 전체 정보를, 아닐 경우 일부 정보(이름 학과 학번(일부) 기수 Email)
     @GetMapping("{memberId}")
-    public ResponseEntity<MemberResponseControllerDto> getMemberById(
+    public ResponseEntity<?> getMemberById(
             @PathVariable String memberId,
-            @RequestHeader("user_uid") String uid){
+            @RequestHeader("user_uid") String uid,
+            @RequestHeader("user_role_id") Integer roleID){
 
-        MemberResponseControllerDto result = memberService.findById(memberId).toControllerDto();
+        MemberFullResponseControllerDto result = memberService.findById(memberId).toControllerDto();
+        if(roleID >= adminRole.getId() || uid.equals(memberId)) return ResponseEntity.ok(result);
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(result.toTiny());
     }
 
     @GetMapping
-    public ResponseEntity<List<MemberResponseControllerDto>> getMemberAll(
+    public ResponseEntity<List<MemberFullResponseControllerDto>> getMemberAll(
             @PageableDefault(page = 0,size = 1000,sort = "id",direction = Sort.Direction.DESC)
             @PageableValid(sortKeys =
                     {"id","email","name","phoneNumber","studentID","major","rank","role","year","leaveAbsence","dateOfBirth","createdDateTime","modifiedDateTime","createBy","modifiedBy"}
@@ -118,7 +113,7 @@ public class MemberApiController {
         //Specification 등록
         MemberSpecification spec = memberSpecificationBuilder.toSpec(queryParam);
 
-        List<MemberResponseControllerDto> results;
+        List<MemberFullResponseControllerDto> results;
 
         //limit true
         if(limit > 0){
@@ -160,12 +155,12 @@ public class MemberApiController {
     }
 
     @PutMapping("{memberID}")
-    public ResponseEntity<MemberResponseControllerDto> updateMember(
+    public ResponseEntity<MemberFullResponseControllerDto> updateMember(
             @PathVariable String memberID,
             @RequestBody @Valid MemberUpdateRequestControllerDto memberUpdateRequestControllerDto,
             @RequestHeader("user_uid") String uid){
 
-        MemberResponseControllerDto result = memberService.update(memberID,
+        MemberFullResponseControllerDto result = memberService.update(memberID,
                 memberUpdateRequestControllerDto.toServiceDto(
                         majorService.findById(memberUpdateRequestControllerDto.getMajorId()).toEntity(),
                         rankService.findById(memberUpdateRequestControllerDto.getRankId()).toEntity(),

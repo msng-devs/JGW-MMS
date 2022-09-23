@@ -149,7 +149,7 @@ class AttendanceApiControllerTest {
     }
 
     @Test
-    void getAttendanceAll() throws Exception {
+    void getAttendanceAllWithAdminNotSelf() throws Exception {
 
         //given
         List<AttendanceResponseServiceDto> targetAttendanceList = new ArrayList<AttendanceResponseServiceDto>();
@@ -160,6 +160,7 @@ class AttendanceApiControllerTest {
 
         AttendanceSpecification spec = Mockito.mock(AttendanceSpecification.class);
         MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+        queryParam.add("memberID",testAttendances.getMemberID());
         queryParam.add("modifiedBy",testAttendances.getCreateBy());
         queryParam.add("createBy",testAttendances.getCreateBy());
         queryParam.add("startCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
@@ -176,7 +177,8 @@ class AttendanceApiControllerTest {
         //when
         ResultActions result = mvc.perform(
                 RestDocumentationRequestBuilders.get("/api/v1/attendance")
-                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",4)
                         .queryParams(queryParam)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
@@ -214,6 +216,135 @@ class AttendanceApiControllerTest {
                                         .map(AttendanceResponseServiceDto::toControllerDto)
                                         .collect(Collectors.toList()))));
 
+
+    }
+    @Test
+    void getAttendanceAllWithAdminSelf() throws Exception {
+
+        //given
+        List<AttendanceResponseServiceDto> targetAttendanceList = new ArrayList<AttendanceResponseServiceDto>();
+
+        AttendanceResponseServiceDto testAttendances =  new AttendanceResponseServiceDto(testUtils.getTestAttendance());
+        targetAttendanceList.add(testAttendances);
+
+
+        AttendanceSpecification spec = Mockito.mock(AttendanceSpecification.class);
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+        queryParam.add("memberID",testAttendances.getMemberID());
+        queryParam.add("modifiedBy",testAttendances.getCreateBy());
+        queryParam.add("createBy",testAttendances.getCreateBy());
+        queryParam.add("startCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("startModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("index","출결 코드를");
+
+        Pageable pageable = PageRequest.of(0,1000, Sort.by(Sort.Direction.DESC,"id"));
+        doReturn(spec).when(attendanceSpecificationBuilder).toSpec(queryParam);
+
+        doReturn(targetAttendanceList).when(attendanceService).findAll(any(),any());
+
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/attendance")
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",4)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(
+                        objectMapper.writeValueAsString(
+                                targetAttendanceList.stream()
+                                        .map(AttendanceResponseServiceDto::toControllerDto)
+                                        .collect(Collectors.toList()))));
+
+
+    }
+    @Test
+    void getAttendanceAllWithNoAdminAuthError() throws Exception {
+
+        //given
+        List<AttendanceResponseServiceDto> targetAttendanceList = new ArrayList<AttendanceResponseServiceDto>();
+
+        AttendanceResponseServiceDto testAttendances =  new AttendanceResponseServiceDto(testUtils.getTestAttendance());
+        targetAttendanceList.add(testAttendances);
+
+
+        AttendanceSpecification spec = Mockito.mock(AttendanceSpecification.class);
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+        queryParam.add("memberID",testAttendances.getMemberID());
+        queryParam.add("modifiedBy",testAttendances.getCreateBy());
+        queryParam.add("createBy",testAttendances.getCreateBy());
+        queryParam.add("startCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("startModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("index","출결 코드를");
+
+        Pageable pageable = PageRequest.of(0,1000, Sort.by(Sort.Direction.DESC,"id"));
+        doReturn(spec).when(attendanceSpecificationBuilder).toSpec(queryParam);
+
+        doReturn(targetAttendanceList).when(attendanceService).findAll(any(),any());
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/attendance")
+                        .header("user_uid",testUtils.getTestMember2().getId())
+                        .header("user_role_id",3)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAttendanceAllWithNoAdminNoAuthError() throws Exception {
+
+        //given
+        List<AttendanceResponseServiceDto> targetAttendanceList = new ArrayList<AttendanceResponseServiceDto>();
+
+        AttendanceResponseServiceDto testAttendances =  new AttendanceResponseServiceDto(testUtils.getTestAttendance());
+        targetAttendanceList.add(testAttendances);
+
+
+        AttendanceSpecification spec = Mockito.mock(AttendanceSpecification.class);
+        MultiValueMap<String, String> queryParam = new LinkedMultiValueMap<>();
+        queryParam.add("memberID",testAttendances.getMemberID());
+        queryParam.add("modifiedBy",testAttendances.getCreateBy());
+        queryParam.add("createBy",testAttendances.getCreateBy());
+        queryParam.add("startCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endCreatedDateTime",testAttendances.getCreatedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("startModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("endModifiedDateTime",testAttendances.getModifiedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        queryParam.add("index","출결 코드를");
+
+        Pageable pageable = PageRequest.of(0,1000, Sort.by(Sort.Direction.DESC,"id"));
+        doReturn(spec).when(attendanceSpecificationBuilder).toSpec(queryParam);
+
+        doReturn(targetAttendanceList).when(attendanceService).findAll(any(),any());
+        //when
+        ResultActions result = mvc.perform(
+                RestDocumentationRequestBuilders.get("/api/v1/attendance")
+                        .header("user_uid",testUtils.getTestUid())
+                        .header("user_role_id",3)
+                        .queryParams(queryParam)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print());
+
+        //then
+        result.andExpect(status().isOk())
+                .andExpect(content().json(
+                        objectMapper.writeValueAsString(
+                                targetAttendanceList.stream()
+                                        .map(AttendanceResponseServiceDto::toControllerDto)
+                                        .collect(Collectors.toList()))));
 
     }
 

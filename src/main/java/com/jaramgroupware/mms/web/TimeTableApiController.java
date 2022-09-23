@@ -1,20 +1,13 @@
 package com.jaramgroupware.mms.web;
 
-import com.jaramgroupware.mms.domain.attendance.AttendanceSpecification;
-import com.jaramgroupware.mms.domain.attendance.AttendanceSpecificationBuilder;
 import com.jaramgroupware.mms.domain.attendanceType.AttendanceType;
 import com.jaramgroupware.mms.domain.member.Member;
-import com.jaramgroupware.mms.domain.member.MemberSpecification;
-import com.jaramgroupware.mms.domain.member.MemberSpecificationBuilder;
 import com.jaramgroupware.mms.domain.rank.Rank;
 import com.jaramgroupware.mms.domain.timeTable.TimeTable;
 import com.jaramgroupware.mms.domain.timeTable.TimeTableSpecification;
 import com.jaramgroupware.mms.domain.timeTable.TimeTableSpecificationBuilder;
-import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceAddRequestControllerDto;
-import com.jaramgroupware.mms.dto.attendance.controllerDto.AttendanceResponseControllerDto;
 import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceAddServiceDto;
-import com.jaramgroupware.mms.dto.attendance.serviceDto.AttendanceResponseServiceDto;
-import com.jaramgroupware.mms.dto.member.controllerDto.MemberResponseControllerDto;
+import com.jaramgroupware.mms.dto.member.controllerDto.MemberFullResponseControllerDto;
 import com.jaramgroupware.mms.dto.member.serviceDto.MemberResponseServiceDto;
 import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableAddRequestControllerDto;
 import com.jaramgroupware.mms.dto.timeTable.controllerDto.TimeTableIdResponseControllerDto;
@@ -33,9 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,7 +62,7 @@ public class TimeTableApiController {
                 ),uid);
 
         //미결 attendance생성
-        List<MemberResponseControllerDto> targets =
+        List<MemberFullResponseControllerDto> targets =
                 memberService.findAll(attendanceTarget.stream()
                         .map(target -> Rank.builder()
                                 .id(target).build())

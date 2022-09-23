@@ -3,10 +3,13 @@ package com.jaramgroupware.mms.web;
 
 import com.jaramgroupware.mms.domain.penalty.PenaltySpecification;
 import com.jaramgroupware.mms.domain.penalty.PenaltySpecificationBuilder;
+import com.jaramgroupware.mms.domain.role.Role;
 import com.jaramgroupware.mms.dto.general.controllerDto.MessageDto;
 import com.jaramgroupware.mms.dto.penalty.controllerDto.*;
 import com.jaramgroupware.mms.dto.penalty.serviceDto.PenaltyResponseServiceDto;
 import com.jaramgroupware.mms.service.PenaltyService;
+import com.jaramgroupware.mms.utils.exception.CustomException;
+import com.jaramgroupware.mms.utils.exception.ErrorCode;
 import com.jaramgroupware.mms.utils.validation.PageableValid;
 import com.jaramgroupware.mms.utils.validation.penalty.BulkUpdatePenaltyValid;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,8 @@ public class PenaltyApiController {
     private final PenaltyService penaltyService;
     private final PenaltySpecificationBuilder penaltySpecificationBuilder;
 
+    private final Role adminRole = Role.builder().id(4).build();
+
 
     @PostMapping
     public ResponseEntity<MessageDto> addPenalty(
@@ -52,9 +57,11 @@ public class PenaltyApiController {
     @GetMapping("{penaltyId}")
     public ResponseEntity<PenaltyResponseControllerDto> getPenaltyById(
             @PathVariable Long penaltyId,
-            @RequestHeader("user_uid") String uid){
+            @RequestHeader("user_uid") String uid,
+            @RequestHeader("user_role_id") Integer roleID){
 
         PenaltyResponseControllerDto result = penaltyService.findById(penaltyId).toControllerDto();
+        if(roleID < adminRole.getId() && !uid.equals(result.getTargetMemberID())) throw new CustomException(ErrorCode.FORBIDDEN_ROLE);
         return ResponseEntity.ok(result);
     }
 
@@ -65,7 +72,12 @@ public class PenaltyApiController {
                     {"id","type","targetMember","reason","createdDateTime","modifiedDateTime","createBy","modifiedBy"}
                     ) Pageable pageable,
             @RequestParam(required = false) MultiValueMap<String, String> queryParam,
-            @RequestHeader("user_uid") String uid){
+            @RequestHeader("user_uid") String uid,
+            @RequestHeader("user_role_id") Integer roleID){
+
+        if((!queryParam.containsKey("targetMember") || !Objects.equals(queryParam.getFirst("targetMember"), uid)) && roleID < adminRole.getId()){
+            throw new CustomException(ErrorCode.FORBIDDEN_ROLE);
+        }
 
         //limit 확인 및 추가
         int limit = queryParam.containsKey("limit") ? Integer.parseInt(Objects.requireNonNull(queryParam.getFirst("limit"))) : -1;
